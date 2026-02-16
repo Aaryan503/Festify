@@ -13,6 +13,7 @@ connectDB();
 
 const app = express();
 
+app.use(express.json());
 app.use(cookieParser());
 
 app.use(
@@ -21,11 +22,11 @@ app.use(
     credentials: true,
   })
 );
-app.use(passport.initialize());
 
+app.use(passport.initialize());
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
 
-app.listen(5000, () =>
-  console.log("Server running on port 5000")
-);
+app.listen(5000, () => {
+  console.log("Server running on port 5000");
+});
