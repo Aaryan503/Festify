@@ -27,7 +27,7 @@ const OTHER_EVENTS = [
 
 const HomePage = () => {
   return (
-    <div className="p-5">
+    <div className="p-5 lg:p-8">
       <div className="flex justify-between items-start mb-6">
         <h1 className="text-2xl font-bold tracking-tight">
           PEARL{' '}
@@ -51,7 +51,7 @@ const HomePage = () => {
         transition={{ duration: 0.5 }}
         className="glass rounded-3xl overflow-hidden mb-8 group"
       >
-        <div className="relative aspect-[4/5] overflow-hidden">
+        <div className="relative aspect-[4/5] lg:aspect-[16/9] overflow-hidden">
           <img
             src={SPOTLIGHT.image}
             alt={SPOTLIGHT.title}
@@ -59,13 +59,12 @@ const HomePage = () => {
           />
           <div className="absolute inset-0 bg-gradient-to-t from-dark-bg/80 via-transparent to-transparent" />
           
-          {/* Radial glow overlay */}
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(108,93,211,0.15),transparent_70%)]" />
         </div>
       </motion.div>
 
       <h3 className="text-base font-bold mb-4">Other Events:</h3>
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 lg:gap-4">
         {OTHER_EVENTS.map((event, i) => (
           <motion.div
             key={event.id}

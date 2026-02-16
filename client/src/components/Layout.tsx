@@ -11,12 +11,21 @@ const Layout = ({ children }: LayoutProps) => {
 
   return (
     <div className="min-h-screen bg-dark-bg font-sans">
-      <div className="max-w-md mx-auto min-h-screen relative bg-dark-bg shadow-[0_0_80px_rgba(108,93,211,0.05)]">
-        <main className={showNav ? 'pb-24' : ''}>
-          {children}
-        </main>
-        {showNav && <Navbar />}
-      </div>
+      {showNav ? (
+        <div className="lg:flex lg:h-screen">
+          {/* Sidebar nav on desktop */}
+          <Navbar />
+
+          {/* Main content */}
+          <main className="flex-1 pb-24 lg:pb-0 lg:overflow-y-auto">
+            <div className="max-w-4xl mx-auto">
+              {children}
+            </div>
+          </main>
+        </div>
+      ) : (
+        <main>{children}</main>
+      )}
     </div>
   );
 };

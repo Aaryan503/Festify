@@ -24,8 +24,17 @@ router.get(
       maxAge: 7 * 24 * 60 * 60 * 1000,
     });
 
-    res.redirect("http://localhost:5173");
+    res.redirect("http://localhost:5173/home");
   }
 );
+
+router.get("/logout", (req, res) => {
+  res.clearCookie("token", {
+    httpOnly: true,
+    secure: false,
+    sameSite: "lax",
+  });
+  res.json({ message: "Logged out" });
+});
 
 export default router;

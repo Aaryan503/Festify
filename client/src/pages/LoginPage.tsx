@@ -1,8 +1,24 @@
 import { motion } from 'framer-motion';
+import { Navigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 
 const LoginPage = () => {
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-dark-bg">
+        <div className="w-8 h-8 border-2 border-dark-accent border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  if (user) {
+    return <Navigate to="/home" replace />;
+  }
+
   const handleGoogleLogin = () => {
-    window.location.href = 'http://localhost:5000/api/auth/google';
+    window.location.href = '/api/auth/google';
   };
 
   return (
@@ -35,7 +51,7 @@ const LoginPage = () => {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6, delay: 0.4 }}
-        className="relative z-10 px-8 pb-12"
+        className="relative z-10 px-8 pb-12 w-full max-w-md mx-auto"
       >
         <button
           onClick={handleGoogleLogin}

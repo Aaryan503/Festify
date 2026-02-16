@@ -1,8 +1,9 @@
-import { Search } from 'lucide-react';
+import { LogOut, Mail } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { useAuth } from '../context/AuthContext';
+import { useNavigate } from 'react-router-dom';
 import EventCard from '../components/EventCard';
 
-/* Dummy event data */
 const EVENTS = [
   { id: 1, title: 'Cruxipher', organizer: 'cruX x CSA', date: 'NOV 4-5', time: '8PM-10PM' },
   {
@@ -11,7 +12,7 @@ const EVENTS = [
     organizer: 'cruX',
     date: 'Nov 3rd',
     time: '5-6pm',
-    image: 'https://images.unsplash.com/photo-1526615735655-cf99166f2123?auto=format&fit=crop&q=80&w=600',
+    image: 'https://images.unsplash.com/photo-1504639725590-34d0984388bd?q=80&w=1374&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
     location: 'New Football Ground',
   },
   { id: 3, title: 'Robo Wars', organizer: 'Automation Club', date: 'NOV 4', time: '10AM-4PM' },
@@ -19,29 +20,55 @@ const EVENTS = [
 ];
 
 const ProfilePage = () => {
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    await logout();
+    navigate('/');
+  };
+
   return (
-    <div className="p-5">
-      <div className="flex justify-between items-start mb-6">
-        <h1 className="text-2xl font-bold tracking-tight">
-          Festify{' '}
-          <span className="text-[10px] text-dark-muted align-top leading-none inline-block">
-            20<br />25
-          </span>
-        </h1>
-        <div className="w-9 h-9 rounded-full bg-gradient-to-br from-dark-accent to-purple-800 flex items-center justify-center text-sm font-bold">
-          U
+    <div className="p-5 lg:p-8">
+      {/* Profile card */}
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="glass rounded-2xl p-6 mb-8"
+      >
+        <div className="flex items-center gap-4 mb-6">
+          {user?.avatar ? (
+            <img
+              src={user.avatar}
+              alt={user.name}
+              className="w-16 h-16 rounded-full border-2 border-dark-accent/40 object-cover"
+              referrerPolicy="no-referrer"
+            />
+          ) : (
+            <div className="w-16 h-16 rounded-full bg-gradient-to-br from-dark-accent to-purple-800 flex items-center justify-center text-xl font-bold">
+              {user?.name?.charAt(0) || 'U'}
+            </div>
+          )}
+          <div className="flex-1 min-w-0">
+            <h2 className="text-xl font-bold truncate">{user?.name || 'User'}</h2>
+            <p className="text-dark-muted text-sm flex items-center gap-1.5 truncate">
+              <Mail size={14} className="shrink-0" />
+              {user?.email || 'email@example.com'}
+            </p>
+          </div>
         </div>
-      </div>
 
-      <div className="relative mb-6">
-        <input
-          type="text"
-          placeholder="Search for Events"
-          className="w-full glass rounded-2xl py-3 px-4 pr-10 text-sm placeholder-dark-muted focus:outline-none focus:ring-1 focus:ring-dark-accent/40 transition-all bg-transparent"
-        />
-        <Search size={18} className="absolute right-4 top-1/2 -translate-y-1/2 text-dark-muted" />
-      </div>
+        <button
+          onClick={handleLogout}
+          className="w-full glass rounded-xl py-3 px-4 flex items-center justify-center gap-2 text-red-400 hover:bg-red-500/10 transition-colors cursor-pointer text-sm font-medium"
+        >
+          <LogOut size={16} />
+          Sign Out
+        </button>
+      </motion.div>
 
+      {/* Registered events */}
+      <h3 className="text-base font-bold mb-4">Your Events</h3>
       <div className="space-y-3">
         {EVENTS.map((event, i) => (
           <motion.div
