@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-
+import {UserRole} from "./userRole"
 const userSchema = new mongoose.Schema(
   {
     googleId: {
@@ -22,6 +22,13 @@ const userSchema = new mongoose.Schema(
     avatar: {
       type: String,
     },
+
+    role: {
+      type: String,
+      enum: Object.values(UserRole),
+      required: true,
+      default: UserRole.FestAttendee,
+    }
   },
   { timestamps: true }
 );
