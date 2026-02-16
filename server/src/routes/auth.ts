@@ -1,6 +1,6 @@
 import { Router } from "express";
 import passport from "passport";
-import { signToken } from "../utils/jwt.js";
+import { signToken } from "../utils/jwt";
 
 const router = Router();
 
