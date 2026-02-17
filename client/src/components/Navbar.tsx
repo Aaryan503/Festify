@@ -68,6 +68,20 @@ const Navbar = () => {
               </Link>
             );
           })}
+
+          {(user?.role === 'Event Manager' || user?.role === 'Fest Organizing Body') && (
+             <Link
+                to="/manager"
+                className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 ${
+                  pathname === '/manager'
+                    ? 'bg-dark-accent/15 text-dark-accent-light'
+                    : 'text-dark-muted hover:text-white hover:bg-white/5'
+                }`}
+              >
+                <Flag size={20} strokeWidth={pathname === '/manager' ? 2.5 : 1.8} />
+                <span className="text-sm font-medium">Manager Dashboard</span>
+              </Link>
+          )}
         </nav>
 
         {user && (

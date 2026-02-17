@@ -5,6 +5,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 import LoginPage from './pages/LoginPage';
 import HomePage from './pages/HomePage';
 import ProfilePage from './pages/ProfilePage';
+import ManagerDashboard from './pages/ManagerDashboard';
 
 function App() {
   return (
@@ -15,6 +16,7 @@ function App() {
             <Route path="/" element={<LoginPage />} />
             <Route path="/home" element={<ProtectedRoute><HomePage /></ProtectedRoute>} />
             <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
+            <Route path="/manager" element={<ProtectedRoute><ManagerDashboard /></ProtectedRoute>} />
             <Route path="/events" element={<ProtectedRoute><HomePage /></ProtectedRoute>} />
             <Route path="/schedule" element={<ProtectedRoute><HomePage /></ProtectedRoute>} />
             <Route path="*" element={<Navigate to="/" replace />} />
