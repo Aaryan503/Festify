@@ -3,6 +3,7 @@ import cors from "cors";
 import passport from "./config/passport";
 import authRoutes from "./routes/auth";
 import userRoutes from "./routes/user.routes";
+import eventRoutes from "./routes/event.routes";
 import connectDB from "./config/db";
 import cookieParser from "cookie-parser";
 
@@ -23,6 +24,7 @@ app.use(
 app.use(passport.initialize());
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
+app.use("/api/events", eventRoutes);
 
 app.listen(5000, () => {
   console.log("Server running on port 5000");

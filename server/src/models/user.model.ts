@@ -33,4 +33,15 @@ const userSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-export default mongoose.model("User", userSchema);
+export interface IUser extends mongoose.Document {
+  googleId: string;
+  email: string;
+  name: string;
+  avatar?: string;
+  role: UserRole;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+const User = mongoose.model<IUser>("User", userSchema);
+export default User;
