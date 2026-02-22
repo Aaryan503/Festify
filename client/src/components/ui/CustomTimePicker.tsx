@@ -83,7 +83,7 @@ const CustomTimePicker = ({ label, value, onChange }: CustomTimePickerProps) => 
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
-            className="absolute z-50 mt-2 bg-[#1A1A2E] border border-white/10 rounded-xl shadow-xl p-4 flex gap-2 backdrop-blur-xl justify-center min-w-[200px]"
+            className="absolute z-[9999] mt-2 bg-[#1A1A2E] border border-white/10 rounded-xl shadow-xl p-4 flex gap-2 backdrop-blur-xl justify-center min-w-[200px]"
           >
             {/* Hours Column */}
             <div className="flex flex-col h-32 overflow-y-auto w-16 scrollbar-hide snap-y">

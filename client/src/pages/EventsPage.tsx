@@ -202,7 +202,7 @@ const EventsPage = () => {
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
-            className="glass rounded-2xl p-4 mb-6 overflow-visible"
+            className="glass rounded-2xl p-4 mb-6 overflow-visible relative"
           >
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 relative">
               <CustomSelect
@@ -299,6 +299,8 @@ const EventsPage = () => {
                   time={formatTime(event.startTime)}
                   image={event.image}
                   location={event.location}
+                  description={event.description}
+                  endTime={formatTime(event.endTime)}
                   variant={event.image ? 'featured' : 'list'}
                 />
               </motion.div>

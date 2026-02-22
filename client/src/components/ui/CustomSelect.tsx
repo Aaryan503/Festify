@@ -57,7 +57,7 @@ const CustomSelect = ({ label, value, onChange, options, placeholder = "Select a
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
             transition={{ duration: 0.15 }}
-            className="absolute z-50 w-full mt-2 bg-[#1A1A2E] border border-white/10 rounded-xl shadow-xl overflow-hidden backdrop-blur-xl max-h-60 overflow-y-auto"
+            className="absolute z-[9999] w-full mt-2 bg-[#1A1A2E] border border-white/10 rounded-xl shadow-xl overflow-hidden backdrop-blur-xl max-h-60 overflow-y-auto"
           >
             <div className="p-1">
               {options.map((option) => (
