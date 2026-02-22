@@ -151,7 +151,7 @@ const EventsPage = () => {
   const hasActiveFilters = category || location || startDate || endDate || startTime || endTime;
 
   return (
-    <div className="p-5 lg:p-8">
+    <div className="p-5 lg:p-8 relative">
       <div className="flex justify-between items-start mb-6">
         <h1 className="text-2xl font-bold tracking-tight">Events</h1>
       </div>
@@ -202,7 +202,7 @@ const EventsPage = () => {
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
-            className="glass rounded-2xl p-4 mb-6 overflow-visible relative"
+            className="glass rounded-2xl p-4 mb-6 overflow-visible relative z-20"
           >
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 relative">
               <CustomSelect
@@ -284,7 +284,7 @@ const EventsPage = () => {
         </div>
       ) : (
         <>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6 relative z-10">
             {events.map((event, i) => (
               <motion.div
                 key={event._id}
