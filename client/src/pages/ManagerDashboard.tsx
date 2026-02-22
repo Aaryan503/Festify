@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Plus, Calendar, MapPin, Loader2, ArrowLeft, Clock } from 'lucide-react';
+import { Plus, Calendar, MapPin, Loader2, ArrowLeft, Clock, Edit2, Trash2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import CustomSelect from '../components/ui/CustomSelect';
 import CustomDatePicker from '../components/ui/CustomDatePicker';
@@ -18,10 +18,11 @@ interface Event {
 }
 
 const ManagerDashboard = () => {
-  const [view, setView] = useState<'list' | 'create'>('list');
+  const [view, setView] = useState<'list' | 'create' | 'edit'>('list');
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
+  const [editingEventId, setEditingEventId] = useState<string | null>(null);
 
   // Form State
   const [title, setTitle] = useState('');
@@ -51,6 +52,38 @@ const ManagerDashboard = () => {
     }
   }, [view]);
 
+  const handleEdit = (event: Event) => {
+    setEditingEventId(event._id);
+    setTitle(event.title);
+    setDescription(event.description);
+    setImage(event.image);
+    setLocation(event.location);
+    setCategory(event.category);
+    
+    const start = new Date(event.startTime);
+    setSelectedDate(start);
+    setStartTime(`${start.getHours().toString().padStart(2, '0')}:${start.getMinutes().toString().padStart(2, '0')}`);
+    
+    if (event.endTime) {
+      const end = new Date(event.endTime);
+      setEndTime(`${end.getHours().toString().padStart(2, '0')}:${end.getMinutes().toString().padStart(2, '0')}`);
+    }
+    
+    setView('edit');
+  };
+
+  const handleDelete = async (eventId: string) => {
+    if (!window.confirm('Are you sure you want to delete this event? This action cannot be undone.')) return;
+    
+    try {
+      await axios.delete(`/api/events/${eventId}`, { withCredentials: true });
+      setEvents(events.filter(e => e._id !== eventId));
+    } catch (error) {
+      console.error('Error deleting event:', error);
+      alert('Failed to delete event');
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedDate) return alert("Please select a date");
@@ -72,15 +105,27 @@ const ManagerDashboard = () => {
         return;
       }
 
-      await axios.post('/api/events', {
-        title,
-        description,
-        image,
-        location,
-        category,
-        startTime: startDateTime, 
-        endTime: endDateTime
-      }, { withCredentials: true });
+      if (view === 'create') {
+        await axios.post('/api/events', {
+          title,
+          description,
+          image,
+          location,
+          category,
+          startTime: startDateTime, 
+          endTime: endDateTime
+        }, { withCredentials: true });
+      } else {
+        await axios.patch(`/api/events/${editingEventId}`, {
+          title,
+          description,
+          image,
+          location,
+          category,
+          startTime: startDateTime, 
+          endTime: endDateTime
+        }, { withCredentials: true });
+      }
 
       // Reset form
       setTitle('');
@@ -90,11 +135,12 @@ const ManagerDashboard = () => {
       setCategory('');
       setStartTime('09:00');
       setEndTime('17:00');
+      setEditingEventId(null);
       
       setView('list');
     } catch (error) {
-      console.error('Error creating event:', error);
-      alert('Failed to create event');
+      console.error(`Error ${view === 'create' ? 'creating' : 'updating'} event:`, error);
+      alert(`Failed to ${view === 'create' ? 'create' : 'update'} event`);
     } finally {
       setLoading(false);
     }
@@ -123,9 +169,9 @@ const ManagerDashboard = () => {
         </div>
 
         <AnimatePresence mode="wait">
-          {view === 'create' ? (
+          {(view === 'create' || view === 'edit') ? (
             <motion.div
-              key="create"
+              key="form"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
@@ -140,7 +186,7 @@ const ManagerDashboard = () => {
               </button>
 
               <div className="glass-card p-8 rounded-3xl border border-white/5 shadow-xl">
-                <h2 className="text-2xl font-bold mb-8">Create New Event</h2>
+                <h2 className="text-2xl font-bold mb-8">{view === 'create' ? 'Create New Event' : 'Edit Event'}</h2>
                 
                 <form onSubmit={handleSubmit} className="space-y-8">
                   {/* Basic Info */}
@@ -255,7 +301,7 @@ const ManagerDashboard = () => {
                         className="bg-dark-accent hover:bg-dark-accent-light text-white px-8 py-3 rounded-xl font-medium shadow-lg shadow-purple-900/20 transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                     >
                         {loading && <Loader2 size={18} className="animate-spin" />}
-                        {loading ? 'Creating...' : 'Publish Event'}
+                        {loading ? (view === 'create' ? 'Creating...' : 'Updating...') : (view === 'create' ? 'Publish Event' : 'Update Event')}
                     </button>
                   </div>
                 </form>
@@ -294,8 +340,27 @@ const ManagerDashboard = () => {
                                 alt={event.title}
                                 className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                             />
-                            <div className="absolute top-4 right-4 bg-black/60 backdrop-blur-md px-3 py-1 rounded-full text-xs font-medium border border-white/10">
-                                {event.category}
+                            <div className="absolute top-4 right-4 flex gap-2">
+                                <div className="bg-black/60 backdrop-blur-md px-3 py-1 rounded-full text-xs font-medium border border-white/10">
+                                    {event.category}
+                                </div>
+                            </div>
+
+                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-4">
+                                <button
+                                    onClick={() => handleEdit(event)}
+                                    className="p-3 bg-white/10 hover:bg-white/20 backdrop-blur-md rounded-full text-white transition-all transform hover:scale-110 cursor-pointer"
+                                    title="Edit Event"
+                                >
+                                    <Edit2 size={20} />
+                                </button>
+                                <button
+                                    onClick={() => handleDelete(event._id)}
+                                    className="p-3 bg-red-500/20 hover:bg-red-500/40 backdrop-blur-md rounded-full text-red-400 transition-all transform hover:scale-110 cursor-pointer"
+                                    title="Delete Event"
+                                >
+                                    <Trash2 size={20} />
+                                </button>
                             </div>
                         </div>
                         <div className="p-5 flex flex-col flex-1">
