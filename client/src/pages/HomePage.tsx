@@ -42,7 +42,7 @@ const HomePage = () => {
 
       <p className="text-dark-accent-light text-[11px] font-semibold uppercase tracking-widest mb-1">
         Starting in {SPOTLIGHT.timeLeft}
-      </p>
+      </p>    
       <h2 className="text-lg font-bold mb-4">{SPOTLIGHT.title}</h2>
 
       <motion.div

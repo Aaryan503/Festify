@@ -7,6 +7,8 @@ interface EventCardProps {
   time: string;
   image?: string;
   location?: string;
+  description?: string;
+  endTime?: string;
   variant?: 'list' | 'featured';
 }
 
@@ -17,6 +19,8 @@ const EventCard = ({
   time,
   image,
   location,
+  description,
+  endTime,
   variant = 'list',
 }: EventCardProps) => {
   if (variant === 'featured' && image) {
@@ -31,8 +35,15 @@ const EventCard = ({
           <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
         </div>
         <div className="p-4">
-          <p className="text-sm font-bold text-white">{date} {time}</p>
-          <p className="text-dark-muted text-xs flex items-center gap-1 mt-1">
+          <h3 className="font-bold text-white mb-1">{title}</h3>
+          {description && (
+            <p className="text-dark-muted text-xs mb-2 line-clamp-2">{description}</p>
+          )}
+          <p className="text-sm font-bold text-white mb-1">{date} {time}</p>
+          {endTime && (
+            <p className="text-dark-muted text-xs mb-1">Ends: {endTime}</p>
+          )}
+          <p className="text-dark-muted text-xs flex items-center gap-1">
             <MapPin size={12} />
             {location || 'TBD'}
           </p>
@@ -47,14 +58,20 @@ const EventCard = ({
         <div className="w-10 h-10 rounded-full bg-gradient-to-br from-dark-accent to-purple-800 flex items-center justify-center text-white font-bold text-sm shrink-0">
           {title.charAt(0)}
         </div>
-        <div>
+        <div className="flex-1">
           <h3 className="font-semibold text-sm leading-tight">{title}</h3>
           <p className="text-dark-muted text-xs">{organizer}</p>
+          {description && (
+            <p className="text-dark-muted text-xs mt-1 line-clamp-1">{description}</p>
+          )}
         </div>
       </div>
       <div className="text-right">
         <p className="font-bold text-xs uppercase">{date}</p>
         <p className="text-dark-muted text-[10px]">{time}</p>
+        {endTime && (
+          <p className="text-dark-muted text-[10px]">End: {endTime}</p>
+        )}
       </div>
     </div>
   );

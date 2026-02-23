@@ -123,7 +123,7 @@ const CustomDatePicker = ({ label, value, onChange, placeholder = "Select date" 
             initial={{ opacity: 0, scale: 0.95, y: 10 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 10 }}
-            className="absolute z-50 mt-2 bg-[#1A1A2E] border border-white/10 rounded-xl shadow-2xl p-4 w-72 backdrop-blur-xl"
+            className="absolute z-[9999] mt-2 bg-[#1A1A2E] border border-white/10 rounded-xl shadow-2xl p-4 w-72 backdrop-blur-xl"
           >
             <div className="flex items-center justify-between mb-4">
                 <button type="button" onClick={prevMonth} className="p-1 hover:bg-white/5 rounded-lg text-dark-muted hover:text-white transition-colors cursor-pointer">
