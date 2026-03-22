@@ -105,6 +105,7 @@ const HomePage = () => {
                 description={event.description}
                 endTime={formatTime(event.endTime)}
                 variant={event.image ? 'featured' : 'list'}
+                showInterestedButton={true}
               />
             </motion.div>
           ))}
