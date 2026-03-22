@@ -2,6 +2,8 @@ import { MoreVertical } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useState, useEffect } from 'react';
 import EventCard from '../components/EventCard';
+import axios from 'axios';
+import { useAuth } from '../context/AuthContext';
 
 interface Event {
   _id: string;
@@ -23,7 +25,9 @@ interface Event {
 
 const HomePage = () => {
   const [events, setEvents] = useState<Event[]>([]);
+  const [interestStatuses, setInterestStatuses] = useState<Record<string, boolean>>({});
   const [loading, setLoading] = useState(true);
+  const { user } = useAuth();
 
   useEffect(() => {
     const fetchEvents = async () => {
@@ -32,6 +36,29 @@ const HomePage = () => {
         if (response.ok) {
           const data = await response.json();
           setEvents(data);
+          
+          // Fetch interest status for each event if user is logged in
+          if (user) {
+            const statusPromises = data.map(async (event: Event) => {
+              try {
+                const statusResponse = await axios.get(`/api/events/${event._id}/interested/status`, {
+                  withCredentials: true
+                });
+                return { eventId: event._id, interested: statusResponse.data.interested };
+              } catch (error) {
+                console.error(`Error fetching interest status for event ${event._id}:`, error);
+                return { eventId: event._id, interested: false };
+              }
+            });
+            
+            const statuses = await Promise.all(statusPromises);
+            const statusMap = statuses.reduce((acc, status) => {
+              acc[status.eventId] = status.interested;
+              return acc;
+            }, {} as Record<string, boolean>);
+            
+            setInterestStatuses(statusMap);
+          }
         }
       } catch (error) {
         console.error('Error fetching events:', error);
@@ -41,7 +68,7 @@ const HomePage = () => {
     };
 
     fetchEvents();
-  }, []);
+  }, [user]);
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -96,6 +123,7 @@ const HomePage = () => {
               transition={{ duration: 0.4, delay: 0.05 * i }}
             >
               <EventCard
+                _id={event._id}
                 title={event.title}
                 organizer={event.organizer.name}
                 date={formatDate(event.startTime)}
@@ -106,6 +134,7 @@ const HomePage = () => {
                 endTime={formatTime(event.endTime)}
                 variant={event.image ? 'featured' : 'list'}
                 showInterestedButton={true}
+                initialInterestedStatus={interestStatuses[event._id] || false}
               />
             </motion.div>
           ))}

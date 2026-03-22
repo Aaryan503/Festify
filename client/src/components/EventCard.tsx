@@ -1,7 +1,10 @@
 import { MapPin } from 'lucide-react';
 import { useState } from 'react';
+import axios from 'axios';
+import { useAuth } from '../context/AuthContext';
 
 interface EventCardProps {
+  _id: string;
   title: string;
   organizer: string;
   date: string;
@@ -12,9 +15,11 @@ interface EventCardProps {
   endTime?: string;
   variant?: 'list' | 'featured';
   showInterestedButton?: boolean;
+  initialInterestedStatus?: boolean;
 }
 
 const EventCard = ({
+  _id,
   title,
   organizer,
   date,
@@ -25,8 +30,11 @@ const EventCard = ({
   endTime,
   variant = 'list',
   showInterestedButton = false,
+  initialInterestedStatus = false,
 }: EventCardProps) => {
-  const [isInterested, setIsInterested] = useState(false);
+  const [isInterested, setIsInterested] = useState(initialInterestedStatus);
+  const [isLoading, setIsLoading] = useState(false);
+  const { user } = useAuth();
   if (variant === 'featured' && image) {
     return (
       <div className="glass rounded-2xl overflow-hidden group cursor-pointer hover:border-dark-accent/30 transition-all duration-300">
@@ -51,19 +59,34 @@ const EventCard = ({
             <MapPin size={12} />
             {location || 'TBD'}
           </p>
-          {showInterestedButton && (
+          {showInterestedButton && user && (
             <button
-              onClick={(e) => {
+              onClick={async (e) => {
                 e.stopPropagation();
-                setIsInterested(!isInterested);
+                if (!user || isLoading) return;
+                
+                setIsLoading(true);
+                try {
+                  const response = await axios.post(
+                    `/api/events/${_id}/interested/toggle`,
+                    {},
+                    { withCredentials: true }
+                  );
+                  setIsInterested(response.data.interested);
+                } catch (error) {
+                  console.error('Error toggling interest:', error);
+                } finally {
+                  setIsLoading(false);
+                }
               }}
+              disabled={isLoading}
               className={`mt-3 px-3 py-1 rounded-full text-xs font-medium transition-colors ${
                 isInterested
                   ? 'bg-green-500/20 text-green-400 border border-green-500/30'
                   : 'bg-gray-500/20 text-gray-400 border border-gray-500/30'
-              }`}
+              } ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
             >
-              {isInterested ? 'Interested' : 'Interested'}
+              {isLoading ? '...' : (isInterested ? 'Interested' : 'Mark as Interested')}
             </button>
           )}
         </div>
@@ -91,19 +114,34 @@ const EventCard = ({
         {endTime && (
           <p className="text-dark-muted text-[10px]">End: {endTime}</p>
         )}
-        {showInterestedButton && (
+        {showInterestedButton && user && (
           <button
-            onClick={(e) => {
+            onClick={async (e) => {
               e.stopPropagation();
-              setIsInterested(!isInterested);
+              if (!user || isLoading) return;
+              
+              setIsLoading(true);
+              try {
+                const response = await axios.post(
+                  `/api/events/${_id}/interested/toggle`,
+                  {},
+                  { withCredentials: true }
+                );
+                setIsInterested(response.data.interested);
+              } catch (error) {
+                console.error('Error toggling interest:', error);
+              } finally {
+                setIsLoading(false);
+              }
             }}
+            disabled={isLoading}
             className={`mt-2 px-3 py-1 rounded-full text-xs font-medium transition-colors ${
               isInterested
                 ? 'bg-green-500/20 text-green-400 border border-green-500/30'
                 : 'bg-gray-500/20 text-gray-400 border border-gray-500/30'
-            }`}
+            } ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
           >
-            {isInterested ? 'Interested' : 'Interested'}
+            {isLoading ? '...' : (isInterested ? 'Interested' : 'Interested')}
           </button>
         )}
       </div>
