@@ -33,6 +33,20 @@ router.post("/", isAuthenticated, async (req, res) => {
   }
 });
 
+// Get all events for home page
+router.get("/", async (req, res) => {
+  try {
+    const events = await Event.find()
+      .populate("organizer", "name email")
+      .sort({ startTime: 1 })
+      .lean();
+    res.json(events);
+  } catch (error) {
+    console.error("Error fetching all events:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
 // Get logged-in user's events
 router.get("/my-events", isAuthenticated, async (req, res) => {
   try {

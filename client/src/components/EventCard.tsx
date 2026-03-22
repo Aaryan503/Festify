@@ -1,4 +1,5 @@
 import { MapPin } from 'lucide-react';
+import { useState } from 'react';
 
 interface EventCardProps {
   title: string;
@@ -23,6 +24,13 @@ const EventCard = ({
   endTime,
   variant = 'list',
 }: EventCardProps) => {
+  const [isInterested, setIsInterested] = useState(false);
+
+  const toggleInterested = (e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent card click
+    setIsInterested(!isInterested);
+  };
+
   if (variant === 'featured' && image) {
     return (
       <div className="glass rounded-2xl overflow-hidden group cursor-pointer hover:border-dark-accent/30 transition-all duration-300">
@@ -43,18 +51,28 @@ const EventCard = ({
           {endTime && (
             <p className="text-dark-muted text-xs mb-1">Ends: {endTime}</p>
           )}
-          <p className="text-dark-muted text-xs flex items-center gap-1">
+          <p className="text-dark-muted text-xs flex items-center gap-1 mb-3">
             <MapPin size={12} />
             {location || 'TBD'}
           </p>
+          <button
+            onClick={toggleInterested}
+            className={`w-full px-3 py-2 rounded-full text-xs font-medium transition-all duration-200 ${
+              isInterested
+                ? 'bg-green-500 text-white hover:bg-green-600'
+                : 'bg-gray-600 text-gray-300 hover:bg-gray-500'
+            }`}
+          >
+            {isInterested ? 'Interested' : 'Interested'}
+          </button>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="glass rounded-2xl p-4 flex justify-between items-center cursor-pointer hover:border-dark-accent/30 transition-all duration-300">
-      <div className="flex items-center gap-3">
+    <div className="glass rounded-2xl p-4 cursor-pointer hover:border-dark-accent/30 transition-all duration-300">
+      <div className="flex items-center gap-3 mb-3">
         <div className="w-10 h-10 rounded-full bg-gradient-to-br from-dark-accent to-purple-800 flex items-center justify-center text-white font-bold text-sm shrink-0">
           {title.charAt(0)}
         </div>
@@ -66,13 +84,29 @@ const EventCard = ({
           )}
         </div>
       </div>
-      <div className="text-right">
-        <p className="font-bold text-xs uppercase">{date}</p>
-        <p className="text-dark-muted text-[10px]">{time}</p>
-        {endTime && (
-          <p className="text-dark-muted text-[10px]">End: {endTime}</p>
-        )}
+      <div className="flex justify-between items-center mb-3">
+        <div>
+          <p className="font-bold text-xs uppercase">{date}</p>
+          <p className="text-dark-muted text-[10px]">{time}</p>
+          {endTime && (
+            <p className="text-dark-muted text-[10px]">End: {endTime}</p>
+          )}
+        </div>
+        <p className="text-dark-muted text-xs flex items-center gap-1">
+          <MapPin size={12} />
+          {location || 'TBD'}
+        </p>
       </div>
+      <button
+        onClick={toggleInterested}
+        className={`w-full px-3 py-2 rounded-full text-xs font-medium transition-all duration-200 ${
+          isInterested
+            ? 'bg-green-500 text-white hover:bg-green-600'
+            : 'bg-gray-600 text-gray-300 hover:bg-gray-500'
+        }`}
+      >
+        {isInterested ? 'Interested' : 'Interested'}
+      </button>
     </div>
   );
 };
