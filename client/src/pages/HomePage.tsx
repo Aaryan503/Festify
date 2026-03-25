@@ -1,31 +1,95 @@
 import { MoreVertical } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { useState, useEffect } from 'react';
+import EventCard from '../components/EventCard';
+import axios from 'axios';
+import { useAuth } from '../context/AuthContext';
 
-/* ── Dummy data ── */
-const SPOTLIGHT = {
-  title: 'Band Night: Pineapple Express',
-  timeLeft: '50 MINUTES',
-  image: 'https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?q=80&w=1470&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
-};
-
-const OTHER_EVENTS = [
-  {
-    id: 1,
-    title: 'PCRC Concert',
-    date: '5TH NOVEMBER',
-    time: '8:00 PM',
-    image: 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?auto=format&fit=crop&q=80&w=400',
-  },
-  {
-    id: 2,
-    title: 'Comedy Night',
-    date: '4TH NOVEMBER',
-    time: '8:00 PM',
-    image: 'https://images.unsplash.com/photo-1585699324551-f6c309eedeca?auto=format&fit=crop&q=80&w=400',
-  },
-];
+interface Event {
+  _id: string;
+  title: string;
+  description: string;
+  image: string;
+  location: string;
+  startTime: string;
+  endTime: string;
+  category: string;
+  organizer: {
+    _id: string;
+    name: string;
+    email: string;
+  };
+  createdAt: string;
+  updatedAt: string;
+}
 
 const HomePage = () => {
+  const [events, setEvents] = useState<Event[]>([]);
+  const [interestStatuses, setInterestStatuses] = useState<Record<string, boolean>>({});
+  const [loading, setLoading] = useState(true);
+  const { user } = useAuth();
+
+  useEffect(() => {
+    const fetchEvents = async () => {
+      try {
+        const response = await fetch('/api/events');
+        if (response.ok) {
+          const data = await response.json();
+          setEvents(data);
+          
+          // Fetch interest status for each event if user is logged in
+          if (user) {
+            const statusPromises = data.map(async (event: Event) => {
+              try {
+                const statusResponse = await axios.get(`/api/events/${event._id}/interested/status`, {
+                  withCredentials: true
+                });
+                return { eventId: event._id, interested: statusResponse.data.interested };
+              } catch (error) {
+                console.error(`Error fetching interest status for event ${event._id}:`, error);
+                return { eventId: event._id, interested: false };
+              }
+            });
+            
+            const statuses = await Promise.all(statusPromises);
+            const statusMap = statuses.reduce((acc, status) => {
+              acc[status.eventId] = status.interested;
+              return acc;
+            }, {} as Record<string, boolean>);
+            
+            setInterestStatuses(statusMap);
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching events:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchEvents();
+  }, [user]);
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }).toUpperCase();
+  };
+
+  const formatTime = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+  };
+
+  if (loading) {
+    return (
+      <div className="p-5 lg:p-8">
+        <div className="flex justify-center items-center h-64">
+          <div className="text-white">Loading events...</div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="p-5 lg:p-8">
       <div className="flex justify-between items-start mb-6">
@@ -40,56 +104,42 @@ const HomePage = () => {
         </button>
       </div>
 
-      <p className="text-dark-accent-light text-[11px] font-semibold uppercase tracking-widest mb-1">
-        Starting in {SPOTLIGHT.timeLeft}
-      </p>    
-      <h2 className="text-lg font-bold mb-4">{SPOTLIGHT.title}</h2>
-
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="glass rounded-3xl overflow-hidden mb-8 group"
-      >
-        <div className="relative aspect-[4/5] lg:aspect-[16/9] overflow-hidden">
-          <img
-            src={SPOTLIGHT.image}
-            alt={SPOTLIGHT.title}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-dark-bg/80 via-transparent to-transparent" />
-          
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(108,93,211,0.15),transparent_70%)]" />
+      {loading ? (
+        <div className="flex justify-center items-center py-20">
+          <div className="text-white">Loading events...</div>
         </div>
-      </motion.div>
-
-      <h3 className="text-base font-bold mb-4">Other Events:</h3>
-      <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 lg:gap-4">
-        {OTHER_EVENTS.map((event, i) => (
-          <motion.div
-            key={event.id}
-            initial={{ opacity: 0, y: 15 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4, delay: 0.1 * i }}
-            className="glass rounded-2xl overflow-hidden group cursor-pointer"
-          >
-            <div className="relative aspect-square overflow-hidden">
-              <img
-                src={event.image}
-                alt={event.title}
-                className="w-full h-full object-cover opacity-70 group-hover:opacity-90 group-hover:scale-105 transition-all duration-500"
+      ) : events.length === 0 ? (
+        <div className="text-center py-20">
+          <p className="text-dark-muted text-lg">No events available</p>
+          <p className="text-dark-muted text-sm mt-2">Check back later for upcoming events!</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {events.map((event, i) => (
+            <motion.div
+              key={event._id}
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4, delay: 0.05 * i }}
+            >
+              <EventCard
+                _id={event._id}
+                title={event.title}
+                organizer={event.organizer.name}
+                date={formatDate(event.startTime)}
+                time={formatTime(event.startTime)}
+                image={event.image}
+                location={event.location}
+                description={event.description}
+                endTime={formatTime(event.endTime)}
+                variant={event.image ? 'featured' : 'list'}
+                showInterestedButton={true}
+                initialInterestedStatus={interestStatuses[event._id] || false}
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent" />
-              <div className="absolute bottom-0 left-0 p-3">
-                <h4 className="font-bold text-sm leading-tight">{event.title}</h4>
-                <p className="text-[10px] text-white/50 uppercase mt-0.5">
-                  {event.date}, {event.time}
-                </p>
-              </div>
-            </div>
-          </motion.div>
-        ))}
-      </div>
+            </motion.div>
+          ))}
+        </div>
+      )}
     </div>
   );
 };

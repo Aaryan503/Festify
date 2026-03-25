@@ -1,6 +1,7 @@
 import express from "express";
 import { isAuthenticated } from "../middleware/auth.middleware";
 import Event from "../models/event.model";
+import InterestedUsers from "../models/interestedUsers.model";
 import { UserRole } from "../models/userRole";
 
 const router = express.Router();
@@ -29,6 +30,20 @@ router.post("/", isAuthenticated, async (req, res) => {
     res.status(201).json(event);
   } catch (error) {
     console.error("Error creating event:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// Get all events for home page
+router.get("/", async (req, res) => {
+  try {
+    const events = await Event.find()
+      .populate("organizer", "name email")
+      .sort({ startTime: 1 })
+      .lean();
+    res.json(events);
+  } catch (error) {
+    console.error("Error fetching all events:", error);
     res.status(500).json({ message: "Server error" });
   }
 });
@@ -271,6 +286,203 @@ router.delete("/:id", isAuthenticated, async (req, res) => {
     res.json({ message: "Event deleted successfully" });
   } catch (error) {
     console.error("Error deleting event:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// ==================== INTERESTED USERS CRUD OPERATIONS ====================
+
+// CREATE: Add user's interest in an event
+router.post("/:id/interested", isAuthenticated, async (req, res) => {
+  try {
+    const { id: eventId } = req.params;
+    const userId = req.user?._id;
+
+    // Check if event exists
+    const event = await Event.findById(eventId);
+    if (!event) {
+      return res.status(404).json({ message: "Event not found" });
+    }
+
+    // Check if already interested
+    const existing = await InterestedUsers.findOne({ userId, eventId });
+    if (existing) {
+      return res.status(400).json({ message: "User is already interested in this event" });
+    }
+
+    // Add interest
+    const interest = await InterestedUsers.create({ userId, eventId });
+    
+    // Update event's interestedUsers array
+    await Event.findByIdAndUpdate(eventId, { $addToSet: { interestedUsers: userId } });
+
+    res.status(201).json({ message: "Successfully marked as interested", interest });
+  } catch (error) {
+    console.error("Error adding interest:", error);
+    if (error instanceof Error && 'code' in error && error.code === 11000) {
+      return res.status(400).json({ message: "User is already interested in this event" });
+    }
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// READ: Check if user is interested in a specific event
+router.get("/:id/interested/status", isAuthenticated, async (req, res) => {
+  try {
+    const { id: eventId } = req.params;
+    const userId = req.user?._id;
+
+    const interest = await InterestedUsers.findOne({ userId, eventId });
+    res.json({ interested: !!interest });
+  } catch (error) {
+    console.error("Error checking interest status:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// READ: Get all events a user is interested in
+router.get("/interested/my-events", isAuthenticated, async (req, res) => {
+  try {
+    const userId = req.user?._id;
+    const { page = "1", limit = "10" } = req.query;
+
+    const pageNum = Math.max(1, parseInt(page as string, 10));
+    const limitNum = Math.min(50, Math.max(1, parseInt(limit as string, 10)));
+    const skip = (pageNum - 1) * limitNum;
+
+    const interests = await InterestedUsers.find({ userId })
+      .populate({
+        path: 'eventId',
+        populate: {
+          path: 'organizer',
+          select: 'name email'
+        }
+      })
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limitNum)
+      .lean();
+
+    const total = await InterestedUsers.countDocuments({ userId });
+
+    const totalPages = Math.ceil(total / limitNum);
+
+    res.json({
+      events: interests.map(interest => interest.eventId),
+      pagination: {
+        currentPage: pageNum,
+        totalPages,
+        totalItems: total,
+        itemsPerPage: limitNum,
+        hasNextPage: pageNum < totalPages,
+        hasPrevPage: pageNum > 1,
+      },
+    });
+  } catch (error) {
+    console.error("Error fetching user's interested events:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// READ: Get all users interested in a specific event
+router.get("/:id/interested/users", isAuthenticated, async (req, res) => {
+  try {
+    const { id: eventId } = req.params;
+    const { page = "1", limit = "10" } = req.query;
+
+    // Check if event exists
+    const event = await Event.findById(eventId);
+    if (!event) {
+      return res.status(404).json({ message: "Event not found" });
+    }
+
+    const pageNum = Math.max(1, parseInt(page as string, 10));
+    const limitNum = Math.min(50, Math.max(1, parseInt(limit as string, 10)));
+    const skip = (pageNum - 1) * limitNum;
+
+    const interests = await InterestedUsers.find({ eventId })
+      .populate('userId', 'name email')
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limitNum)
+      .lean();
+
+    const total = await InterestedUsers.countDocuments({ eventId });
+
+    const totalPages = Math.ceil(total / limitNum);
+
+    res.json({
+      users: interests.map(interest => interest.userId),
+      pagination: {
+        currentPage: pageNum,
+        totalPages,
+        totalItems: total,
+        itemsPerPage: limitNum,
+        hasNextPage: pageNum < totalPages,
+        hasPrevPage: pageNum > 1,
+      },
+    });
+  } catch (error) {
+    console.error("Error fetching interested users:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// UPDATE: Toggle interest (add if not exists, remove if exists)
+router.post("/:id/interested/toggle", isAuthenticated, async (req, res) => {
+  try {
+    const { id: eventId } = req.params;
+    const userId = req.user?._id;
+
+    // Check if event exists
+    const event = await Event.findById(eventId);
+    if (!event) {
+      return res.status(404).json({ message: "Event not found" });
+    }
+
+    // Check if already interested
+    const existing = await InterestedUsers.findOne({ userId, eventId });
+    
+    if (existing) {
+      await InterestedUsers.deleteOne({ userId, eventId });
+      await Event.findByIdAndUpdate(eventId, { $pull: { interestedUsers: userId } });
+      res.json({ interested: false, message: "Removed from interested" });
+    } else {
+      // Add interest
+      await InterestedUsers.create({ userId, eventId });
+      await Event.findByIdAndUpdate(eventId, { $addToSet: { interestedUsers: userId } });
+      res.json({ interested: true, message: "Added to interested" });
+    }
+  } catch (error) {
+    console.error("Error toggling interest:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// DELETE: Remove user's interest in an event
+router.delete("/:id/interested", isAuthenticated, async (req, res) => {
+  try {
+    const { id: eventId } = req.params;
+    const userId = req.user?._id;
+
+    // Check if event exists
+    const event = await Event.findById(eventId);
+    if (!event) {
+      return res.status(404).json({ message: "Event not found" });
+    }
+
+    const result = await InterestedUsers.deleteOne({ userId, eventId });
+    
+    if (result.deletedCount === 0) {
+      return res.status(404).json({ message: "Interest not found" });
+    }
+
+    // Update event's interestedUsers array
+    await Event.findByIdAndUpdate(eventId, { $pull: { interestedUsers: userId } });
+
+    res.json({ message: "Successfully removed from interested" });
+  } catch (error) {
+    console.error("Error removing interest:", error);
     res.status(500).json({ message: "Server error" });
   }
 });

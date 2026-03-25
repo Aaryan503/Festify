@@ -35,6 +35,10 @@ const eventSchema = new mongoose.Schema(
       ref: "User",
       required: true,
     },
+    interestedUsers: [{
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+    }],
   },
   { timestamps: true }
 );
