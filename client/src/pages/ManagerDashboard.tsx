@@ -47,7 +47,7 @@ const ManagerDashboard = () => {
   const { user, loading: authLoading } = useAuth();
   const role = user?.role;
 
-  const [approvalTab, setApprovalTab] = useState<'pending' | 'approved'>('pending');
+  const [approvalTab, setApprovalTab] = useState<'pending' | 'approved' | 'create'>('pending');
   const [pendingApprovals, setPendingApprovals] = useState<ApprovalEvent[]>([]);
   const [approvedEvents, setApprovedEvents] = useState<ApprovalEvent[]>([]);
   const [approvalsLoading, setApprovalsLoading] = useState(false);
@@ -128,6 +128,57 @@ const ManagerDashboard = () => {
     } catch (error) {
       console.error('Error updating approval status:', error);
       alert('Failed to update approval status');
+    }
+  };
+
+  const handleFestCreate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedDate) return alert('Please select a date');
+
+    setLoading(true);
+    try {
+      const startDateTime = new Date(selectedDate);
+      const [startH, startM] = startTime.split(':').map(Number);
+      startDateTime.setHours(startH, startM);
+
+      const endDateTime = new Date(selectedDate);
+      const [endH, endM] = endTime.split(':').map(Number);
+      endDateTime.setHours(endH, endM);
+
+      if (endDateTime <= startDateTime) {
+        alert('End time must be after start time');
+        return;
+      }
+
+      await axios.post(
+        '/api/events',
+        {
+          title,
+          description,
+          image,
+          location,
+          category,
+          startTime: startDateTime,
+          endTime: endDateTime,
+        },
+        { withCredentials: true }
+      );
+
+      // Reset form
+      setTitle('');
+      setDescription('');
+      setImage('');
+      setLocation('');
+      setCategory('');
+      setStartTime('09:00');
+      setEndTime('17:00');
+      setSelectedDate(new Date());
+      setApprovalTab('approved');
+    } catch (error) {
+      console.error('Error creating event:', error);
+      alert('Failed to create event');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -273,9 +324,130 @@ const ManagerDashboard = () => {
             >
               Approved Events
             </button>
+            <button
+              onClick={() => setApprovalTab('create')}
+              className={`px-5 py-2.5 rounded-xl font-medium transition-all cursor-pointer ${
+                approvalTab === 'create'
+                  ? 'bg-dark-accent text-white'
+                  : 'bg-white/5 hover:bg-white/10 text-dark-muted hover:text-white'
+              }`}
+            >
+              Create Events
+            </button>
           </div>
 
-          {approvalsLoading ? (
+          {approvalTab === 'create' ? (
+            <div className="max-w-3xl mx-auto">
+              <div className="glass-card p-8 rounded-3xl border border-white/5 shadow-xl">
+                <h2 className="text-2xl font-bold mb-2">Add Event (Auto-Approved)</h2>
+                <p className="text-dark-muted mb-6 text-sm">
+                  Events created by the Fest Organizing Body are immediately set to <span className="text-white">accepted</span>.
+                </p>
+
+                <form onSubmit={handleFestCreate} className="space-y-8">
+                  <div className="space-y-6">
+                    <div>
+                      <label className="block text-sm font-medium text-dark-muted mb-2">Event Title</label>
+                      <input
+                        type="text"
+                        required
+                        className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-dark-accent/50 focus:ring-1 focus:ring-dark-accent/50 transition-colors placeholder:text-dark-muted/50"
+                        placeholder="e.g. Summer Music Festival"
+                        value={title}
+                        onChange={(e) => setTitle(e.target.value)}
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <CustomSelect
+                        label="Category"
+                        value={category}
+                        onChange={setCategory}
+                        options={[
+                          { id: 'Music', label: 'Music' },
+                          { id: 'Workshop', label: 'Workshop' },
+                          { id: 'Tech', label: 'Tech' },
+                          { id: 'Art', label: 'Art' },
+                          { id: 'Sports', label: 'Sports' },
+                          { id: 'Other', label: 'Other' },
+                        ]}
+                      />
+
+                      <div>
+                        <label className="block text-sm font-medium text-dark-muted mb-2">Location</label>
+                        <div className="relative">
+                          <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 text-dark-muted" size={18} />
+                          <input
+                            type="text"
+                            required
+                            className="w-full bg-white/5 border border-white/10 rounded-xl pl-12 pr-4 py-3 text-white focus:outline-none focus:border-dark-accent/50 focus:ring-1 focus:ring-dark-accent/50 transition-colors placeholder:text-dark-muted/50"
+                            placeholder="Venue or Address"
+                            value={location}
+                            onChange={(e) => setLocation(e.target.value)}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                      <Calendar size={18} className="text-dark-accent" />
+                      Date & Time
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                      <CustomDatePicker label="Date" value={selectedDate} onChange={setSelectedDate} />
+                      <CustomTimePicker label="Start Time" value={startTime} onChange={setStartTime} />
+                      <CustomTimePicker label="End Time" value={endTime} onChange={setEndTime} />
+                    </div>
+                  </div>
+
+                  <div className="space-y-6">
+                    <div>
+                      <label className="block text-sm font-medium text-dark-muted mb-2">Cover Image URL</label>
+                      <input
+                        type="url"
+                        required
+                        className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-dark-accent/50 focus:ring-1 focus:ring-dark-accent/50 transition-colors placeholder:text-dark-muted/50"
+                        placeholder="https://example.com/image.jpg"
+                        value={image}
+                        onChange={(e) => setImage(e.target.value)}
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-dark-muted mb-2">Description</label>
+                      <textarea
+                        required
+                        rows={4}
+                        className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-dark-accent/50 focus:ring-1 focus:ring-dark-accent/50 transition-colors resize-none placeholder:text-dark-muted/50"
+                        placeholder="Tell people what your event is about..."
+                        value={description}
+                        onChange={(e) => setDescription(e.target.value)}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="pt-4 flex items-center justify-end gap-4">
+                    <button
+                      type="button"
+                      onClick={() => setApprovalTab('approved')}
+                      className="px-6 py-3 rounded-xl text-dark-muted hover:text-white font-medium transition-colors cursor-pointer"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={loading}
+                      className="bg-dark-accent hover:bg-dark-accent-light text-white px-8 py-3 rounded-xl font-medium shadow-lg shadow-purple-900/20 transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                    >
+                      {loading ? <Loader2 size={18} className="animate-spin" /> : 'Create Event'}
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          ) : approvalsLoading ? (
             <div className="flex justify-center items-center h-64">
               <Loader2 size={32} className="animate-spin text-dark-accent" />
             </div>

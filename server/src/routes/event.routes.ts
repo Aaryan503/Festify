@@ -23,8 +23,11 @@ router.post("/", isAuthenticated, async (req, res) => {
 
     const { title, description, image, location, startTime, endTime, category } = req.body;
 
+    const status =
+      req.user?.role === UserRole.FestOrganizingBody ? "accepted" : "pending";
+
     const event = await Event.create({
-      status: "pending",
+      status,
       title,
       description,
       image,
