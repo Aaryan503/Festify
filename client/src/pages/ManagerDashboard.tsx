@@ -47,10 +47,15 @@ const ManagerDashboard = () => {
   const { user, loading: authLoading } = useAuth();
   const role = user?.role;
 
-  const [approvalTab, setApprovalTab] = useState<'pending' | 'approved' | 'create'>('pending');
+  const [approvalTab, setApprovalTab] = useState<'pending' | 'approved' | 'create' | 'promote'>('pending');
   const [pendingApprovals, setPendingApprovals] = useState<ApprovalEvent[]>([]);
   const [approvedEvents, setApprovedEvents] = useState<ApprovalEvent[]>([]);
   const [approvalsLoading, setApprovalsLoading] = useState(false);
+
+  // Fest Organizing Body: promote Event Managers
+  const [promoteEmail, setPromoteEmail] = useState('');
+  const [promoteLoading, setPromoteLoading] = useState(false);
+  const [promoteMessage, setPromoteMessage] = useState<string | null>(null);
 
   // Form State
   const [title, setTitle] = useState('');
@@ -334,6 +339,16 @@ const ManagerDashboard = () => {
             >
               Create Events
             </button>
+            <button
+              onClick={() => setApprovalTab('promote')}
+              className={`px-5 py-2.5 rounded-xl font-medium transition-all cursor-pointer ${
+                approvalTab === 'promote'
+                  ? 'bg-dark-accent text-white'
+                  : 'bg-white/5 hover:bg-white/10 text-dark-muted hover:text-white'
+              }`}
+            >
+              Promote Managers
+            </button>
           </div>
 
           {approvalTab === 'create' ? (
@@ -442,6 +457,83 @@ const ManagerDashboard = () => {
                       className="bg-dark-accent hover:bg-dark-accent-light text-white px-8 py-3 rounded-xl font-medium shadow-lg shadow-purple-900/20 transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                     >
                       {loading ? <Loader2 size={18} className="animate-spin" /> : 'Create Event'}
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          ) : approvalTab === 'promote' ? (
+            <div className="max-w-3xl mx-auto">
+              <div className="glass-card p-8 rounded-3xl border border-white/5 shadow-xl">
+                <h2 className="text-2xl font-bold mb-2">Promote User to Event Manager</h2>
+                <p className="text-dark-muted mb-6 text-sm">
+                  Enter a user&apos;s email. If they exist, their role becomes <span className="text-white">Event Manager</span>.
+                </p>
+
+                <form
+                  onSubmit={async (e) => {
+                    e.preventDefault();
+                    const email = promoteEmail.trim();
+                    if (!email) return alert('Please enter an email.');
+
+                    setPromoteLoading(true);
+                    setPromoteMessage(null);
+                    try {
+                      const { data } = await axios.post(
+                        '/api/users/promote-event-manager',
+                        { email },
+                        { withCredentials: true }
+                      );
+                      setPromoteMessage(data?.message || 'Promotion successful.');
+                      setPromoteEmail('');
+                    } catch (error: any) {
+                      const msg = error?.response?.data?.message || 'Failed to promote user.';
+                      setPromoteMessage(msg);
+                    } finally {
+                      setPromoteLoading(false);
+                    }
+                  }}
+                  className="space-y-8"
+                >
+                  <div>
+                    <label className="block text-sm font-medium text-dark-muted mb-2">User Email</label>
+                    <input
+                      type="email"
+                      required
+                      className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-dark-accent/50 focus:ring-1 focus:ring-dark-accent/50 transition-colors placeholder:text-dark-muted/50"
+                      placeholder="user@example.com"
+                      value={promoteEmail}
+                      onChange={(e) => setPromoteEmail(e.target.value)}
+                    />
+                    {promoteMessage && (
+                      <p
+                        className={`mt-3 text-sm ${
+                          promoteMessage.toLowerCase().includes('fail') ? 'text-red-300' : 'text-green-300'
+                        }`}
+                      >
+                        {promoteMessage}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="pt-2 flex items-center justify-end gap-4">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setPromoteEmail('');
+                        setPromoteMessage(null);
+                      }}
+                      className="px-6 py-3 rounded-xl text-dark-muted hover:text-white font-medium transition-colors cursor-pointer"
+                      disabled={promoteLoading}
+                    >
+                      Clear
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={promoteLoading}
+                      className="bg-dark-accent hover:bg-dark-accent-light text-white px-8 py-3 rounded-xl font-medium shadow-lg shadow-purple-900/20 transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                    >
+                      {promoteLoading ? <Loader2 size={18} className="animate-spin" /> : 'Promote'}
                     </button>
                   </div>
                 </form>
