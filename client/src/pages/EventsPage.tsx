@@ -65,7 +65,7 @@ const EventsPage = () => {
   const fetchEvents = useCallback(async () => {
     try {
       setLoading(true);
-      const params: any = {
+      const params: Record<string, string> = {
         page: currentPage.toString(),
         limit: '12',
       };
@@ -293,6 +293,7 @@ const EventsPage = () => {
                 transition={{ duration: 0.4, delay: 0.05 * i }}
               >
                 <EventCard
+                  _id={event._id}
                   title={event.title}
                   organizer={event.organizer?.name || 'Unknown'}
                   date={formatDate(event.startTime)}
