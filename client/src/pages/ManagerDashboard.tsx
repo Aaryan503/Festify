@@ -5,6 +5,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import CustomSelect from '../components/ui/CustomSelect';
 import CustomDatePicker from '../components/ui/CustomDatePicker';
 import CustomTimePicker from '../components/ui/CustomTimePicker';
+import { useAuth } from '../context/AuthContext';
+import EventCard from '../components/EventCard';
 
 interface Event {
   _id: string;
@@ -15,6 +17,24 @@ interface Event {
   startTime: string; // Start DateTime
   endTime: string; // End DateTime
   category: string;
+  status?: 'pending' | 'accepted' | 'rejected';
+}
+
+interface ApprovalEvent {
+  _id: string;
+  title: string;
+  description: string;
+  image: string;
+  location: string;
+  startTime: string;
+  endTime: string;
+  category: string;
+  status: 'pending' | 'accepted' | 'rejected';
+  organizer?: {
+    name: string;
+    email: string;
+    role?: string;
+  };
 }
 
 const ManagerDashboard = () => {
@@ -23,6 +43,19 @@ const ManagerDashboard = () => {
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
   const [editingEventId, setEditingEventId] = useState<string | null>(null);
+
+  const { user, loading: authLoading } = useAuth();
+  const role = user?.role;
+
+  const [approvalTab, setApprovalTab] = useState<'pending' | 'approved' | 'create' | 'promote'>('pending');
+  const [pendingApprovals, setPendingApprovals] = useState<ApprovalEvent[]>([]);
+  const [approvedEvents, setApprovedEvents] = useState<ApprovalEvent[]>([]);
+  const [approvalsLoading, setApprovalsLoading] = useState(false);
+
+  // Fest Organizing Body: promote Event Managers
+  const [promoteEmail, setPromoteEmail] = useState('');
+  const [promoteLoading, setPromoteLoading] = useState(false);
+  const [promoteMessage, setPromoteMessage] = useState<string | null>(null);
 
   // Form State
   const [title, setTitle] = useState('');
@@ -47,10 +80,122 @@ const ManagerDashboard = () => {
   };
 
   useEffect(() => {
-    if (view === 'list') {
+    if (role === 'Event Manager' && view === 'list') {
       fetchEvents();
     }
-  }, [view]);
+  }, [view, role]);
+
+  const fetchPendingApprovals = async () => {
+    try {
+      setApprovalsLoading(true);
+      const { data } = await axios.get('/api/events/approvals/pending', { withCredentials: true });
+      setPendingApprovals(data?.events || []);
+    } catch (error) {
+      console.error('Error fetching pending approvals:', error);
+      setPendingApprovals([]);
+    } finally {
+      setApprovalsLoading(false);
+    }
+  };
+
+  const fetchApprovedEventsForOrganizingBody = async () => {
+    try {
+      setApprovalsLoading(true);
+      const { data } = await axios.get('/api/events', { withCredentials: true });
+      setApprovedEvents(data || []);
+    } catch (error) {
+      console.error('Error fetching approved events:', error);
+      setApprovedEvents([]);
+    } finally {
+      setApprovalsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (authLoading) return;
+    if (role !== 'Fest Organizing Body') return;
+
+    if (approvalTab === 'pending') fetchPendingApprovals();
+    if (approvalTab === 'approved') fetchApprovedEventsForOrganizingBody();
+  }, [approvalTab, authLoading, role]);
+
+  const updateApprovalStatus = async (eventId: string, nextStatus: 'accepted' | 'rejected') => {
+    try {
+      await axios.patch(
+        `/api/events/${eventId}/approval`,
+        { status: nextStatus },
+        { withCredentials: true }
+      );
+
+      if (approvalTab === 'pending') {
+        setPendingApprovals((prev) => prev.filter((e) => e._id !== eventId));
+      }
+    } catch (error) {
+      console.error('Error updating approval status:', error);
+      alert('Failed to update approval status');
+    }
+  };
+
+  const handleFestCreate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedDate) return alert('Please select a date');
+
+    setLoading(true);
+    try {
+      const startDateTime = new Date(selectedDate);
+      const [startH, startM] = startTime.split(':').map(Number);
+      startDateTime.setHours(startH, startM);
+
+      const endDateTime = new Date(selectedDate);
+      const [endH, endM] = endTime.split(':').map(Number);
+      endDateTime.setHours(endH, endM);
+
+      if (endDateTime <= startDateTime) {
+        alert('End time must be after start time');
+        return;
+      }
+
+      await axios.post(
+        '/api/events',
+        {
+          title,
+          description,
+          image,
+          location,
+          category,
+          startTime: startDateTime,
+          endTime: endDateTime,
+        },
+        { withCredentials: true }
+      );
+
+      // Reset form
+      setTitle('');
+      setDescription('');
+      setImage('');
+      setLocation('');
+      setCategory('');
+      setStartTime('09:00');
+      setEndTime('17:00');
+      setSelectedDate(new Date());
+      setApprovalTab('approved');
+    } catch (error) {
+      console.error('Error creating event:', error);
+      alert('Failed to create event');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }).toUpperCase();
+  };
+
+  const formatTime = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+  };
 
   const handleEdit = (event: Event) => {
     setEditingEventId(event._id);
@@ -147,257 +292,613 @@ const ManagerDashboard = () => {
   };
 
   return (
-    <div className="min-h-screen p-6 md:p-8 lg:p-12"> 
-      <div className="max-w-7xl mx-auto">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
-          <div>
-            <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-white/60">
-              Manager Dashboard
-            </h1>
-            <p className="text-dark-muted mt-1">Manage your events and listings</p>
-          </div>
-          
-          {view === 'list' && (
-            <button
-              onClick={() => setView('create')}
-              className="bg-dark-accent hover:bg-dark-accent-light text-white px-5 py-2.5 rounded-xl font-medium shadow-lg shadow-purple-900/20 transition-all flex items-center gap-2 cursor-pointer"
-            >
-              <Plus size={18} />
-              Create New Event
-            </button>
-          )}
+    <div className="min-h-screen p-6 md:p-8 lg:p-12">
+      {authLoading ? (
+        <div className="flex justify-center items-center h-64">
+          <Loader2 size={32} className="animate-spin text-dark-accent" />
         </div>
+      ) : role === 'Fest Organizing Body' ? (
+        <div className="max-w-7xl mx-auto">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+            <div>
+              <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-white/60">
+                Fest Organizing Body
+              </h1>
+              <p className="text-dark-muted mt-1">Approve or reject submitted events</p>
+            </div>
+          </div>
 
-        <AnimatePresence mode="wait">
-          {(view === 'create' || view === 'edit') ? (
-            <motion.div
-              key="form"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              className="max-w-3xl mx-auto"
+          <div className="flex gap-2 mb-6">
+            <button
+              onClick={() => setApprovalTab('pending')}
+              className={`px-5 py-2.5 rounded-xl font-medium transition-all cursor-pointer ${
+                approvalTab === 'pending'
+                  ? 'bg-dark-accent text-white'
+                  : 'bg-white/5 hover:bg-white/10 text-dark-muted hover:text-white'
+              }`}
             >
-              <button 
-                onClick={() => setView('list')}
-                className="mb-6 flex items-center gap-2 text-dark-muted hover:text-white transition-colors cursor-pointer"
-              >
-                <ArrowLeft size={16} />
-                Back to Events
-              </button>
+              Pending Approvals
+            </button>
+            <button
+              onClick={() => setApprovalTab('approved')}
+              className={`px-5 py-2.5 rounded-xl font-medium transition-all cursor-pointer ${
+                approvalTab === 'approved'
+                  ? 'bg-dark-accent text-white'
+                  : 'bg-white/5 hover:bg-white/10 text-dark-muted hover:text-white'
+              }`}
+            >
+              Approved Events
+            </button>
+            <button
+              onClick={() => setApprovalTab('create')}
+              className={`px-5 py-2.5 rounded-xl font-medium transition-all cursor-pointer ${
+                approvalTab === 'create'
+                  ? 'bg-dark-accent text-white'
+                  : 'bg-white/5 hover:bg-white/10 text-dark-muted hover:text-white'
+              }`}
+            >
+              Create Events
+            </button>
+            <button
+              onClick={() => setApprovalTab('promote')}
+              className={`px-5 py-2.5 rounded-xl font-medium transition-all cursor-pointer ${
+                approvalTab === 'promote'
+                  ? 'bg-dark-accent text-white'
+                  : 'bg-white/5 hover:bg-white/10 text-dark-muted hover:text-white'
+              }`}
+            >
+              Promote Managers
+            </button>
+          </div>
 
+          {approvalTab === 'create' ? (
+            <div className="max-w-3xl mx-auto">
               <div className="glass-card p-8 rounded-3xl border border-white/5 shadow-xl">
-                <h2 className="text-2xl font-bold mb-8">{view === 'create' ? 'Create New Event' : 'Edit Event'}</h2>
-                
-                <form onSubmit={handleSubmit} className="space-y-8">
-                  {/* Basic Info */}
+                <h2 className="text-2xl font-bold mb-2">Add Event (Auto-Approved)</h2>
+                <p className="text-dark-muted mb-6 text-sm">
+                  Events created by the Fest Organizing Body are immediately set to <span className="text-white">accepted</span>.
+                </p>
+
+                <form onSubmit={handleFestCreate} className="space-y-8">
                   <div className="space-y-6">
                     <div>
-                        <label className="block text-sm font-medium text-dark-muted mb-2">Event Title</label>
-                        <input
-                            type="text"
-                            required
-                            className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-dark-accent/50 focus:ring-1 focus:ring-dark-accent/50 transition-colors placeholder:text-dark-muted/50"
-                            placeholder="e.g. Summer Music Festival"
-                            value={title}
-                            onChange={(e) => setTitle(e.target.value)}
-                        />
+                      <label className="block text-sm font-medium text-dark-muted mb-2">Event Title</label>
+                      <input
+                        type="text"
+                        required
+                        className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-dark-accent/50 focus:ring-1 focus:ring-dark-accent/50 transition-colors placeholder:text-dark-muted/50"
+                        placeholder="e.g. Summer Music Festival"
+                        value={title}
+                        onChange={(e) => setTitle(e.target.value)}
+                      />
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                         <CustomSelect
-                            label="Category"
-                            value={category}
-                            onChange={setCategory}
-                            options={[
-                                { id: 'Music', label: 'Music' },
-                                { id: 'Workshop', label: 'Workshop' },
-                                { id: 'Tech', label: 'Tech' },
-                                { id: 'Art', label: 'Art' },
-                                { id: 'Sports', label: 'Sports' },
-                                { id: 'Other', label: 'Other' },
-                            ]}
-                         />
-                         
-                         <div>
-                            <label className="block text-sm font-medium text-dark-muted mb-2">Location</label>
-                            <div className="relative">
-                                <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 text-dark-muted" size={18} />
-                                <input
-                                    type="text"
-                                    required
-                                    className="w-full bg-white/5 border border-white/10 rounded-xl pl-12 pr-4 py-3 text-white focus:outline-none focus:border-dark-accent/50 focus:ring-1 focus:ring-dark-accent/50 transition-colors placeholder:text-dark-muted/50"
-                                    placeholder="Venue or Address"
-                                    value={location}
-                                    onChange={(e) => setLocation(e.target.value)}
-                                />
-                            </div>
+                      <CustomSelect
+                        label="Category"
+                        value={category}
+                        onChange={setCategory}
+                        options={[
+                          { id: 'Music', label: 'Music' },
+                          { id: 'Workshop', label: 'Workshop' },
+                          { id: 'Tech', label: 'Tech' },
+                          { id: 'Art', label: 'Art' },
+                          { id: 'Sports', label: 'Sports' },
+                          { id: 'Other', label: 'Other' },
+                        ]}
+                      />
+
+                      <div>
+                        <label className="block text-sm font-medium text-dark-muted mb-2">Location</label>
+                        <div className="relative">
+                          <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 text-dark-muted" size={18} />
+                          <input
+                            type="text"
+                            required
+                            className="w-full bg-white/5 border border-white/10 rounded-xl pl-12 pr-4 py-3 text-white focus:outline-none focus:border-dark-accent/50 focus:ring-1 focus:ring-dark-accent/50 transition-colors placeholder:text-dark-muted/50"
+                            placeholder="Venue or Address"
+                            value={location}
+                            onChange={(e) => setLocation(e.target.value)}
+                          />
                         </div>
+                      </div>
                     </div>
                   </div>
 
-                  {/* Date & Time */}
                   <div>
                     <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-                        <Calendar size={18} className="text-dark-accent" />
-                        Date & Time
+                      <Calendar size={18} className="text-dark-accent" />
+                      Date & Time
                     </h3>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        <CustomDatePicker
-                            label="Date"
-                            value={selectedDate}
-                            onChange={setSelectedDate}
-                        />
-                        <CustomTimePicker
-                            label="Start Time"
-                            value={startTime}
-                            onChange={setStartTime}
-                        />
-                         <CustomTimePicker
-                            label="End Time"
-                            value={endTime}
-                            onChange={setEndTime}
-                        />
+                      <CustomDatePicker label="Date" value={selectedDate} onChange={setSelectedDate} />
+                      <CustomTimePicker label="Start Time" value={startTime} onChange={setStartTime} />
+                      <CustomTimePicker label="End Time" value={endTime} onChange={setEndTime} />
                     </div>
                   </div>
 
-                  {/* Media & Details */}
                   <div className="space-y-6">
-                     <div>
-                        <label className="block text-sm font-medium text-dark-muted mb-2">Cover Image URL</label>
-                        <input
-                            type="url"
-                            required
-                            className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-dark-accent/50 focus:ring-1 focus:ring-dark-accent/50 transition-colors placeholder:text-dark-muted/50"
-                            placeholder="https://example.com/image.jpg"
-                            value={image}
-                            onChange={(e) => setImage(e.target.value)}
-                        />
+                    <div>
+                      <label className="block text-sm font-medium text-dark-muted mb-2">Cover Image URL</label>
+                      <input
+                        type="url"
+                        required
+                        className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-dark-accent/50 focus:ring-1 focus:ring-dark-accent/50 transition-colors placeholder:text-dark-muted/50"
+                        placeholder="https://example.com/image.jpg"
+                        value={image}
+                        onChange={(e) => setImage(e.target.value)}
+                      />
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-dark-muted mb-2">Description</label>
-                        <textarea
-                            required
-                            rows={4}
-                            className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-dark-accent/50 focus:ring-1 focus:ring-dark-accent/50 transition-colors resize-none placeholder:text-dark-muted/50"
-                            placeholder="Tell people what your event is about..."
-                            value={description}
-                            onChange={(e) => setDescription(e.target.value)}
-                        />
+                      <label className="block text-sm font-medium text-dark-muted mb-2">Description</label>
+                      <textarea
+                        required
+                        rows={4}
+                        className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-dark-accent/50 focus:ring-1 focus:ring-dark-accent/50 transition-colors resize-none placeholder:text-dark-muted/50"
+                        placeholder="Tell people what your event is about..."
+                        value={description}
+                        onChange={(e) => setDescription(e.target.value)}
+                      />
                     </div>
                   </div>
 
                   <div className="pt-4 flex items-center justify-end gap-4">
                     <button
-                        type="button"
-                        onClick={() => setView('list')}
-                        className="px-6 py-3 rounded-xl text-dark-muted hover:text-white font-medium transition-colors cursor-pointer"
+                      type="button"
+                      onClick={() => setApprovalTab('approved')}
+                      className="px-6 py-3 rounded-xl text-dark-muted hover:text-white font-medium transition-colors cursor-pointer"
                     >
-                        Cancel
+                      Cancel
                     </button>
                     <button
-                        type="submit"
-                        disabled={loading}
-                        className="bg-dark-accent hover:bg-dark-accent-light text-white px-8 py-3 rounded-xl font-medium shadow-lg shadow-purple-900/20 transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                      type="submit"
+                      disabled={loading}
+                      className="bg-dark-accent hover:bg-dark-accent-light text-white px-8 py-3 rounded-xl font-medium shadow-lg shadow-purple-900/20 transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                     >
-                        {loading && <Loader2 size={18} className="animate-spin" />}
-                        {loading ? (view === 'create' ? 'Creating...' : 'Updating...') : (view === 'create' ? 'Publish Event' : 'Update Event')}
+                      {loading ? <Loader2 size={18} className="animate-spin" /> : 'Create Event'}
                     </button>
                   </div>
                 </form>
               </div>
-            </motion.div>
+            </div>
+          ) : approvalTab === 'promote' ? (
+            <div className="max-w-3xl mx-auto">
+              <div className="glass-card p-8 rounded-3xl border border-white/5 shadow-xl">
+                <h2 className="text-2xl font-bold mb-2">Promote User to Event Manager</h2>
+                <p className="text-dark-muted mb-6 text-sm">
+                  Enter a user&apos;s email. If they exist, their role becomes <span className="text-white">Event Manager</span>.
+                </p>
+
+                <form
+                  onSubmit={async (e) => {
+                    e.preventDefault();
+                    const email = promoteEmail.trim();
+                    if (!email) return alert('Please enter an email.');
+
+                    setPromoteLoading(true);
+                    setPromoteMessage(null);
+                    try {
+                      const { data } = await axios.post(
+                        '/api/users/promote-event-manager',
+                        { email },
+                        { withCredentials: true }
+                      );
+                      setPromoteMessage(data?.message || 'Promotion successful.');
+                      setPromoteEmail('');
+                    } catch (error: any) {
+                      const msg = error?.response?.data?.message || 'Failed to promote user.';
+                      setPromoteMessage(msg);
+                    } finally {
+                      setPromoteLoading(false);
+                    }
+                  }}
+                  className="space-y-8"
+                >
+                  <div>
+                    <label className="block text-sm font-medium text-dark-muted mb-2">User Email</label>
+                    <input
+                      type="email"
+                      required
+                      className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-dark-accent/50 focus:ring-1 focus:ring-dark-accent/50 transition-colors placeholder:text-dark-muted/50"
+                      placeholder="user@example.com"
+                      value={promoteEmail}
+                      onChange={(e) => setPromoteEmail(e.target.value)}
+                    />
+                    {promoteMessage && (
+                      <p
+                        className={`mt-3 text-sm ${
+                          promoteMessage.toLowerCase().includes('fail') ? 'text-red-300' : 'text-green-300'
+                        }`}
+                      >
+                        {promoteMessage}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="pt-2 flex items-center justify-end gap-4">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setPromoteEmail('');
+                        setPromoteMessage(null);
+                      }}
+                      className="px-6 py-3 rounded-xl text-dark-muted hover:text-white font-medium transition-colors cursor-pointer"
+                      disabled={promoteLoading}
+                    >
+                      Clear
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={promoteLoading}
+                      className="bg-dark-accent hover:bg-dark-accent-light text-white px-8 py-3 rounded-xl font-medium shadow-lg shadow-purple-900/20 transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                    >
+                      {promoteLoading ? <Loader2 size={18} className="animate-spin" /> : 'Promote'}
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          ) : approvalsLoading ? (
+            <div className="flex justify-center items-center h-64">
+              <Loader2 size={32} className="animate-spin text-dark-accent" />
+            </div>
+          ) : approvalTab === 'pending' ? (
+            pendingApprovals.length === 0 ? (
+              <div className="flex flex-col items-center justify-center p-12 text-center text-dark-muted border border-dashed border-white/10 rounded-3xl bg-white/5">
+                <Calendar size={48} className="mb-4 opacity-20" />
+                <h3 className="text-xl font-semibold text-white mb-2">No pending approvals</h3>
+                <p className="mb-6 max-w-sm">Submitted events will appear here until they are approved or rejected.</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {pendingApprovals.map((event) => (
+                  <div
+                    key={event._id}
+                    className="glass-card rounded-2xl border border-white/5 hover:border-dark-accent/30 transition-all overflow-hidden"
+                  >
+                    <div className="p-5 flex items-start gap-4">
+                      <div className="w-20 h-20 rounded-xl overflow-hidden bg-white/5 shrink-0">
+                        <img src={event.image} alt={event.title} className="w-full h-full object-cover" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-3 justify-between">
+                          <h3 className="text-lg font-bold text-white line-clamp-1">
+                            {event.title}
+                          </h3>
+                          <div className="bg-black/60 border border-white/10 backdrop-blur-md px-3 py-1 rounded-full text-xs font-medium text-white/90">
+                            Pending
+                          </div>
+                        </div>
+                        <p className="text-dark-muted text-sm mt-1 line-clamp-2">{event.description}</p>
+                        <div className="flex flex-wrap items-center gap-3 mt-4 text-sm text-dark-muted">
+                          <div className="flex items-center gap-2">
+                            <Calendar size={14} className="text-dark-accent" />
+                            <span>{formatDate(event.startTime)} • {formatTime(event.startTime)}</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Clock size={14} className="text-dark-accent" />
+                            <span>Ends: {formatTime(event.endTime)}</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <MapPin size={14} className="text-dark-accent" />
+                            <span className="truncate">{event.location}</span>
+                          </div>
+                        </div>
+                        <p className="text-xs text-dark-muted mt-2">
+                          Organizer: {event.organizer?.name || 'Unknown'}
+                        </p>
+                      </div>
+
+                      <div className="flex flex-col gap-2 shrink-0">
+                        <button
+                          onClick={() => updateApprovalStatus(event._id, 'accepted')}
+                          className="bg-green-500/20 hover:bg-green-500/30 border border-green-500/30 text-green-300 px-4 py-2 rounded-xl text-sm font-medium cursor-pointer"
+                        >
+                          Approve
+                        </button>
+                        <button
+                          onClick={() => updateApprovalStatus(event._id, 'rejected')}
+                          className="bg-red-500/20 hover:bg-red-500/30 border border-red-500/30 text-red-300 px-4 py-2 rounded-xl text-sm font-medium cursor-pointer"
+                        >
+                          Reject
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )
           ) : (
-            <motion.div
-              key="list"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-            >
-              {fetching ? (
-                 <div className="flex justify-center items-center h-64">
+            approvedEvents.length === 0 ? (
+              <div className="text-center py-20">
+                <p className="text-dark-muted text-lg">No approved events found</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {approvedEvents.map((event) => (
+                  <motion.div
+                    key={event._id}
+                    initial={{ opacity: 0, y: 15 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.4 }}
+                  >
+                    <EventCard
+                      _id={event._id}
+                      title={event.title}
+                      organizer={event.organizer?.name || 'Unknown'}
+                      date={formatDate(event.startTime)}
+                      time={formatTime(event.startTime)}
+                      image={event.image}
+                      location={event.location}
+                      description={event.description}
+                      endTime={formatTime(event.endTime)}
+                      variant={event.image ? 'featured' : 'list'}
+                      showInterestedButton={false}
+                    />
+                  </motion.div>
+                ))}
+              </div>
+            )
+          )}
+        </div>
+      ) : (
+        <div className="max-w-7xl mx-auto">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+            <div>
+              <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-white/60">
+                Manager Dashboard
+              </h1>
+              <p className="text-dark-muted mt-1">Manage your events and listings</p>
+            </div>
+
+            {view === 'list' && role === 'Event Manager' && (
+              <button
+                onClick={() => setView('create')}
+                className="bg-dark-accent hover:bg-dark-accent-light text-white px-5 py-2.5 rounded-xl font-medium shadow-lg shadow-purple-900/20 transition-all flex items-center gap-2 cursor-pointer"
+              >
+                <Plus size={18} />
+                Create New Event
+              </button>
+            )}
+          </div>
+
+          <AnimatePresence mode="wait">
+            {(view === 'create' || view === 'edit') ? (
+              <motion.div
+                key="form"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                className="max-w-3xl mx-auto"
+              >
+                <button
+                  onClick={() => setView('list')}
+                  className="mb-6 flex items-center gap-2 text-dark-muted hover:text-white transition-colors cursor-pointer"
+                >
+                  <ArrowLeft size={16} />
+                  Back to Events
+                </button>
+
+                <div className="glass-card p-8 rounded-3xl border border-white/5 shadow-xl">
+                  <h2 className="text-2xl font-bold mb-8">{view === 'create' ? 'Create New Event' : 'Edit Event'}</h2>
+
+                  <form onSubmit={handleSubmit} className="space-y-8">
+                    {/* Basic Info */}
+                    <div className="space-y-6">
+                      <div>
+                        <label className="block text-sm font-medium text-dark-muted mb-2">Event Title</label>
+                        <input
+                          type="text"
+                          required
+                          className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-dark-accent/50 focus:ring-1 focus:ring-dark-accent/50 transition-colors placeholder:text-dark-muted/50"
+                          placeholder="e.g. Summer Music Festival"
+                          value={title}
+                          onChange={(e) => setTitle(e.target.value)}
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <CustomSelect
+                          label="Category"
+                          value={category}
+                          onChange={setCategory}
+                          options={[
+                            { id: 'Music', label: 'Music' },
+                            { id: 'Workshop', label: 'Workshop' },
+                            { id: 'Tech', label: 'Tech' },
+                            { id: 'Art', label: 'Art' },
+                            { id: 'Sports', label: 'Sports' },
+                            { id: 'Other', label: 'Other' },
+                          ]}
+                        />
+
+                        <div>
+                          <label className="block text-sm font-medium text-dark-muted mb-2">Location</label>
+                          <div className="relative">
+                            <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 text-dark-muted" size={18} />
+                            <input
+                              type="text"
+                              required
+                              className="w-full bg-white/5 border border-white/10 rounded-xl pl-12 pr-4 py-3 text-white focus:outline-none focus:border-dark-accent/50 focus:ring-1 focus:ring-dark-accent/50 transition-colors placeholder:text-dark-muted/50"
+                              placeholder="Venue or Address"
+                              value={location}
+                              onChange={(e) => setLocation(e.target.value)}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Date & Time */}
+                    <div>
+                      <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                        <Calendar size={18} className="text-dark-accent" />
+                        Date & Time
+                      </h3>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <CustomDatePicker
+                          label="Date"
+                          value={selectedDate}
+                          onChange={setSelectedDate}
+                        />
+                        <CustomTimePicker
+                          label="Start Time"
+                          value={startTime}
+                          onChange={setStartTime}
+                        />
+                        <CustomTimePicker
+                          label="End Time"
+                          value={endTime}
+                          onChange={setEndTime}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Media & Details */}
+                    <div className="space-y-6">
+                      <div>
+                        <label className="block text-sm font-medium text-dark-muted mb-2">Cover Image URL</label>
+                        <input
+                          type="url"
+                          required
+                          className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-dark-accent/50 focus:ring-1 focus:ring-dark-accent/50 transition-colors placeholder:text-dark-muted/50"
+                          placeholder="https://example.com/image.jpg"
+                          value={image}
+                          onChange={(e) => setImage(e.target.value)}
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-dark-muted mb-2">Description</label>
+                        <textarea
+                          required
+                          rows={4}
+                          className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-dark-accent/50 focus:ring-1 focus:ring-dark-accent/50 transition-colors resize-none placeholder:text-dark-muted/50"
+                          placeholder="Tell people what your event is about..."
+                          value={description}
+                          onChange={(e) => setDescription(e.target.value)}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="pt-4 flex items-center justify-end gap-4">
+                      <button
+                        type="button"
+                        onClick={() => setView('list')}
+                        className="px-6 py-3 rounded-xl text-dark-muted hover:text-white font-medium transition-colors cursor-pointer"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="submit"
+                        disabled={loading}
+                        className="bg-dark-accent hover:bg-dark-accent-light text-white px-8 py-3 rounded-xl font-medium shadow-lg shadow-purple-900/20 transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                      >
+                        {loading && <Loader2 size={18} className="animate-spin" />}
+                        {loading ? (view === 'create' ? 'Creating...' : 'Updating...') : (view === 'create' ? 'Submit for Approval' : 'Update Event')}
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              </motion.div>
+            ) : (
+              <motion.div
+                key="list"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+              >
+                {fetching ? (
+                  <div className="flex justify-center items-center h-64">
                     <Loader2 size={32} className="animate-spin text-dark-accent" />
-                 </div>
-              ) : events.length === 0 ? (
-                 <div className="flex flex-col items-center justify-center p-12 text-center text-dark-muted border border-dashed border-white/10 rounded-3xl bg-white/5">
+                  </div>
+                ) : events.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center p-12 text-center text-dark-muted border border-dashed border-white/10 rounded-3xl bg-white/5">
                     <Calendar size={48} className="mb-4 opacity-20" />
                     <h3 className="text-xl font-semibold text-white mb-2">No events yet</h3>
                     <p className="mb-6 max-w-sm">You haven't created any events yet. Get started by creating your first event.</p>
                     <button
-                        onClick={() => setView('create')}
-                        className="bg-white/10 hover:bg-white/20 text-white px-6 py-2.5 rounded-xl font-medium transition-all cursor-pointer"
+                      onClick={() => setView('create')}
+                      className="bg-white/10 hover:bg-white/20 text-white px-6 py-2.5 rounded-xl font-medium transition-all cursor-pointer"
                     >
-                        Create Event
+                      Create Event
                     </button>
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {events.map((event) => (
-                    <div key={event._id} className="glass-card rounded-2xl overflow-hidden border border-white/5 group hover:border-dark-accent/30 transition-all flex flex-col h-full"> 
+                      <div key={event._id} className="glass-card rounded-2xl overflow-hidden border border-white/5 group hover:border-dark-accent/30 transition-all flex flex-col h-full">
                         <div className="h-48 overflow-hidden relative shrink-0">
-                            <img 
-                                src={event.image} 
-                                alt={event.title}
-                                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                            />
-                            <div className="absolute top-4 right-4 flex gap-2">
-                                <div className="bg-black/60 backdrop-blur-md px-3 py-1 rounded-full text-xs font-medium border border-white/10">
-                                    {event.category}
-                                </div>
+                          <img
+                            src={event.image}
+                            alt={event.title}
+                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                          />
+                          <div className="absolute top-4 right-4 flex gap-2">
+                            <div className="bg-black/60 backdrop-blur-md px-3 py-1 rounded-full text-xs font-medium border border-white/10">
+                              {event.category}
                             </div>
+                            {event.status && (
+                              <div className="bg-dark-accent/20 backdrop-blur-md px-3 py-1 rounded-full text-xs font-medium border border-dark-accent/30 text-white/90">
+                                {event.status}
+                              </div>
+                            )}
+                          </div>
 
-                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-4">
-                                <button
-                                    onClick={() => handleEdit(event)}
-                                    className="p-3 bg-white/10 hover:bg-white/20 backdrop-blur-md rounded-full text-white transition-all transform hover:scale-110 cursor-pointer"
-                                    title="Edit Event"
-                                >
-                                    <Edit2 size={20} />
-                                </button>
-                                <button
-                                    onClick={() => handleDelete(event._id)}
-                                    className="p-3 bg-red-500/20 hover:bg-red-500/40 backdrop-blur-md rounded-full text-red-400 transition-all transform hover:scale-110 cursor-pointer"
-                                    title="Delete Event"
-                                >
-                                    <Trash2 size={20} />
-                                </button>
-                            </div>
+                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-4">
+                            <button
+                              onClick={() => handleEdit(event)}
+                              className="p-3 bg-white/10 hover:bg-white/20 backdrop-blur-md rounded-full text-white transition-all transform hover:scale-110 cursor-pointer"
+                              title="Edit Event"
+                            >
+                              <Edit2 size={20} />
+                            </button>
+                            <button
+                              onClick={() => handleDelete(event._id)}
+                              className="p-3 bg-red-500/20 hover:bg-red-500/40 backdrop-blur-md rounded-full text-red-400 transition-all transform hover:scale-110 cursor-pointer"
+                              title="Delete Event"
+                            >
+                              <Trash2 size={20} />
+                            </button>
+                          </div>
                         </div>
                         <div className="p-5 flex flex-col flex-1">
-                            <h3 className="text-lg font-bold text-white mb-2 line-clamp-1">{event.title}</h3>
-                            <p className="text-dark-muted text-sm line-clamp-2 mb-4 flex-1">{event.description}</p>
-                            
-                            <div className="flex flex-col gap-2 text-sm text-dark-muted border-t border-white/5 pt-4">
-                                <div className="flex items-center gap-2">
-                                    <Calendar size={14} className="text-dark-accent" />
-                                    <span>
-                                        {new Date(event.startTime).toLocaleDateString()} 
-                                        <span className="mx-1">•</span>
-                                        {new Date(event.startTime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
-                                    </span>
-                                </div>
-                                {event.endTime && (
-                                     <div className="flex items-center gap-2">
-                                        <Clock size={14} className="text-dark-accent" />
-                                        <span>
-                                            Ends: {new Date(event.endTime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
-                                        </span>
-                                    </div>
-                                )}
-                                <div className="flex items-center gap-2">
-                                    <MapPin size={14} className="text-dark-accent" />
-                                    <span className="truncate">{event.location}</span>
-                                </div>
+                          <h3 className="text-lg font-bold text-white mb-2 line-clamp-1">{event.title}</h3>
+                          <p className="text-dark-muted text-sm line-clamp-2 mb-4 flex-1">{event.description}</p>
+
+                          <div className="flex flex-col gap-2 text-sm text-dark-muted border-t border-white/5 pt-4">
+                            <div className="flex items-center gap-2">
+                              <Calendar size={14} className="text-dark-accent" />
+                              <span>
+                                {new Date(event.startTime).toLocaleDateString()}
+                                <span className="mx-1">•</span>
+                                {new Date(event.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                              </span>
                             </div>
+                            {event.endTime && (
+                              <div className="flex items-center gap-2">
+                                <Clock size={14} className="text-dark-accent" />
+                                <span>
+                                  Ends: {new Date(event.endTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                </span>
+                              </div>
+                            )}
+                            <div className="flex items-center gap-2">
+                              <MapPin size={14} className="text-dark-accent" />
+                              <span className="truncate">{event.location}</span>
+                            </div>
+                          </div>
                         </div>
-                    </div>
+                      </div>
                     ))}
-                </div>
-              )}
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
+                  </div>
+                )}
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      )}
     </div>
   );
 };

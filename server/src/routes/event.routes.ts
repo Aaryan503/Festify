@@ -6,6 +6,13 @@ import { UserRole } from "../models/userRole";
 
 const router = express.Router();
 
+// Public browsing should only show approved events.
+// For backwards compatibility with older events that may not yet have `status`,
+// we treat missing status as "accepted".
+const PUBLIC_APPROVED_FILTER: any = {
+  $or: [{ status: "accepted" }, { status: { $exists: false } }],
+};
+
 // Create an event 
 router.post("/", isAuthenticated, async (req, res) => {
   try {
@@ -16,7 +23,11 @@ router.post("/", isAuthenticated, async (req, res) => {
 
     const { title, description, image, location, startTime, endTime, category } = req.body;
 
+    const status =
+      req.user?.role === UserRole.FestOrganizingBody ? "accepted" : "pending";
+
     const event = await Event.create({
+      status,
       title,
       description,
       image,
@@ -37,7 +48,7 @@ router.post("/", isAuthenticated, async (req, res) => {
 // Get all events for home page
 router.get("/", async (req, res) => {
   try {
-    const events = await Event.find()
+    const events = await Event.find(PUBLIC_APPROVED_FILTER)
       .populate("organizer", "name email")
       .sort({ startTime: 1 })
       .lean();
@@ -70,8 +81,8 @@ router.get("/search", async (req, res) => {
       sortOrder = "asc",
     } = req.query;
 
-    // Build search filter - only by event name (title)
-    const filter: any = {};
+    // Build search filter - only by event name (title) + public approved events
+    const filter: any = { ...PUBLIC_APPROVED_FILTER };
 
     if (name && typeof name === "string") {
       filter.title = { $regex: name, $options: "i" };
@@ -140,8 +151,8 @@ router.get("/filter", async (req, res) => {
       sortOrder = "asc",
     } = req.query;
 
-    // Build filter object
-    const filter: any = {};
+    // Build filter object (public approved events only)
+    const filter: any = { ...PUBLIC_APPROVED_FILTER };
 
     // Category filter
     if (category && typeof category === "string") {
@@ -267,6 +278,67 @@ router.patch("/:id", isAuthenticated, async (req, res) => {
   }
 });
 
+// ==================== APPROVAL WORKFLOW ====================
+
+// Fest Organizing Body: view pending events submitted by Event Managers
+router.get("/approvals/pending", isAuthenticated, async (req, res) => {
+  try {
+    if (req.user?.role !== UserRole.FestOrganizingBody) {
+      return res.status(403).json({ message: "Access denied." });
+    }
+
+    const pendingEvents = await Event.find({ status: "pending" })
+      .populate({ path: "organizer", select: "name email role" })
+      .sort({ startTime: 1 })
+      .lean();
+
+    const submittedByManagers = pendingEvents.filter(
+      (e: any) => e.organizer?.role === UserRole.EventManager
+    );
+
+    res.json({ events: submittedByManagers });
+  } catch (error) {
+    console.error("Error fetching pending approvals:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// Fest Organizing Body: approve/reject pending events
+router.patch("/:id/approval", isAuthenticated, async (req, res) => {
+  try {
+    if (req.user?.role !== UserRole.FestOrganizingBody) {
+      return res.status(403).json({ message: "Access denied." });
+    }
+
+    const { id } = req.params;
+    const { status } = req.body as { status?: "accepted" | "rejected" };
+
+    if (!status || !["accepted", "rejected"].includes(status)) {
+      return res.status(400).json({ message: "Invalid status. Use accepted or rejected." });
+    }
+
+    const event = await Event.findById(id);
+    if (!event) {
+      return res.status(404).json({ message: "Event not found" });
+    }
+
+    if (event.status !== "pending") {
+      return res.status(400).json({ message: `Event is not pending (current: ${event.status}).` });
+    }
+
+    const updatedEvent = await Event.findByIdAndUpdate(
+      id,
+      { status },
+      { new: true }
+    ).populate("organizer", "name email role");
+
+    res.json(updatedEvent);
+  } catch (error) {
+    console.error("Error updating event approval status:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
 // Delete an event
 router.delete("/:id", isAuthenticated, async (req, res) => {
   try {
@@ -353,6 +425,7 @@ router.get("/interested/my-events", isAuthenticated, async (req, res) => {
     const interests = await InterestedUsers.find({ userId })
       .populate({
         path: 'eventId',
+        match: PUBLIC_APPROVED_FILTER,
         populate: {
           path: 'organizer',
           select: 'name email'
@@ -368,7 +441,7 @@ router.get("/interested/my-events", isAuthenticated, async (req, res) => {
     const totalPages = Math.ceil(total / limitNum);
 
     res.json({
-      events: interests.map(interest => interest.eventId),
+        events: interests.map(interest => interest.eventId).filter((e) => !!e),
       pagination: {
         currentPage: pageNum,
         totalPages,
