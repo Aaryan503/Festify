@@ -486,8 +486,12 @@ const ManagerDashboard = () => {
                       );
                       setPromoteMessage(data?.message || 'Promotion successful.');
                       setPromoteEmail('');
-                    } catch (error: any) {
-                      const msg = error?.response?.data?.message || 'Failed to promote user.';
+                    } catch (error: unknown) {
+                      let msg = 'Failed to promote user.';
+                      if (error && typeof error === 'object' && 'response' in error) {
+                        const axiosError = error as { response?: { data?: { message?: string } } };
+                        msg = axiosError.response?.data?.message || msg;
+                      }
                       setPromoteMessage(msg);
                     } finally {
                       setPromoteLoading(false);

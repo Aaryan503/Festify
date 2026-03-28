@@ -78,6 +78,7 @@ const ProfilePage = () => {
             transition={{ duration: 0.3, delay: 0.06 * i }}
           >
             <EventCard
+              _id={event.id.toString()}
               title={event.title}
               organizer={event.organizer}
               date={event.date}
