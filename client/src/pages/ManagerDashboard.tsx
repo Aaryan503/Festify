@@ -304,7 +304,7 @@ const ManagerDashboard = () => {
               <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-white/60">
                 Fest Organizing Body
               </h1>
-              <p className="text-dark-muted mt-1">Approve or reject submitted events</p>
+              <p className="text-dark-muted mt-1">Moderate submissions, publish official events, and manage organizer access</p>
             </div>
           </div>
 
