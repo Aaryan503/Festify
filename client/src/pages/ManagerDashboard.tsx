@@ -1,13 +1,13 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Plus, Calendar, MapPin, Loader2, ArrowLeft, Clock, Edit2, Trash2 } from 'lucide-react';
+import { Plus, Calendar, MapPin, Loader2, ArrowLeft, Clock, Edit2, Trash2, Send} from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import CustomSelect from '../components/ui/CustomSelect';
 import CustomDatePicker from '../components/ui/CustomDatePicker';
 import CustomTimePicker from '../components/ui/CustomTimePicker';
 import { useAuth } from '../context/AuthContext';
 import EventCard from '../components/EventCard';
-
+import { useNavigate } from 'react-router-dom';
 interface Event {
   _id: string;
   title: string;
@@ -38,6 +38,7 @@ interface ApprovalEvent {
 }
 
 const ManagerDashboard = () => {
+  const navigate = useNavigate();
   const [view, setView] = useState<'list' | 'create' | 'edit'>('list');
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(false);
@@ -864,6 +865,16 @@ const ManagerDashboard = () => {
                               title="Delete Event"
                             >
                               <Trash2 size={20} />
+                            </button>
+                            <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    navigate(`/message-page?eventId=${event._id}`);
+                                  }}
+                              className="p-3 bg-yellow-500/20 hover:bg-yellow-500/40 backdrop-blur-md rounded-full text-yellow-400 transition-all transform hover:scale-110 cursor-pointer"
+                              title="Send Message"
+                            >
+                              <Send size={20} />
                             </button>
                           </div>
                         </div>
