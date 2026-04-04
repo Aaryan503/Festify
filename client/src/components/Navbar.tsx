@@ -1,10 +1,11 @@
 import { Link, useLocation } from 'react-router-dom';
-import { Home, Flag, Calendar, User } from 'lucide-react';
+import { Home, Flag, Calendar, User, Heart } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 const NAV_ITEMS = [
   { path: '/home', icon: Home, label: 'Home' },
   { path: '/events', icon: Flag, label: 'Events' },
+  { path: '/interested-events', icon: Heart, label: 'Interested Events' },
   { path: '/schedule', icon: Calendar, label: 'Schedule' },
   { path: '/profile', icon: User, label: 'Profile' },
 ] as const;
@@ -79,7 +80,9 @@ const Navbar = () => {
                 }`}
               >
                 <Flag size={20} strokeWidth={pathname === '/manager' ? 2.5 : 1.8} />
-                <span className="text-sm font-medium">Manager Dashboard</span>
+                <span className="text-sm font-medium">
+                  {user?.role === 'Fest Organizing Body' ? 'FOB Dashboard' : 'Manager Dashboard'}
+                </span>
               </Link>
           )}
         </nav>
