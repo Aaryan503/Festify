@@ -10,6 +10,7 @@ import EventsPage from './pages/EventsPage';
 import InterestedEventsPage from './pages/InterestedEventsPage';
 import SchedulePage from './pages/SchedulePage';
 import EventChatPage from './pages/EventChatPage';
+import MessagePage from './pages/MessagePage';
 
 function App() {
   return (
@@ -25,6 +26,7 @@ function App() {
             <Route path="/interested-events" element={<ProtectedRoute><InterestedEventsPage /></ProtectedRoute>} />
             <Route path="/events/:eventId/chat" element={<ProtectedRoute><EventChatPage /></ProtectedRoute>} />
             <Route path="/schedule" element={<ProtectedRoute><SchedulePage /></ProtectedRoute>} />
+            <Route path="/message-page" element={<ProtectedRoute><MessagePage /></ProtectedRoute>} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </Layout>
