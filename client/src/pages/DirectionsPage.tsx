@@ -1,10 +1,10 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { MapContainer, TileLayer, Polyline, Marker, Popup, useMap, Tooltip } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { nodes, findShortestPath } from '../utils/navigationGraph';
-import { MapPin, Navigation, ArrowLeft, Footprints } from 'lucide-react';
+import { MapPin, Navigation, ArrowLeft, Footprints, Target } from 'lucide-react';
 
 // Custom Map node marker
 const createCustomIcon = (isVenue: boolean) => L.divIcon({
@@ -39,6 +39,34 @@ const createArrowIcon = (angle: number) => L.divIcon({
   iconAnchor: [8, 8]
 });
 
+// User location marker with heading cone
+const createUserIcon = (heading: number | null) => L.divIcon({
+  className: 'user-location-icon',
+  html: `<div style="position: relative; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center;">
+    ${heading !== null ? `
+      <div style="position: absolute; width: 0; height: 0; 
+        border-left: 12px solid transparent; 
+        border-right: 12px solid transparent; 
+        border-bottom: 30px solid rgba(59, 130, 246, 0.4); 
+        transform-origin: 50% 100%; 
+        transform: translateY(-50%) rotate(${heading}deg); 
+        z-index: 1;">
+      </div>
+    ` : ''}
+    <div style="
+      background-color: #3b82f6; 
+      width: 16px; 
+      height: 16px; 
+      border-radius: 50%; 
+      border: 3px solid #fff;
+      box-shadow: 0 0 8px rgba(59,130,246,0.8);
+      z-index: 2;
+    "></div>
+  </div>`,
+  iconSize: [36, 36],
+  iconAnchor: [18, 18]
+});
+
 export default function DirectionsPage() {
   const { venueId } = useParams<{ venueId: string }>();
   const navigate = useNavigate();
@@ -48,6 +76,73 @@ export default function DirectionsPage() {
   const [endPoint, setEndPoint] = useState<string>(
     Object.values(nodes).find(n => n.name.toLowerCase().includes(venueId?.toLowerCase() || '') || n.id === venueId)?.id || ''
   );
+
+  const [userLocation, setUserLocation] = useState<{lat: number, lng: number, heading: number | null} | null>(null);
+  const [compassHeading, setCompassHeading] = useState<number | null>(null);
+  const userAutoLocated = useRef(false);
+
+  // Geo-location watching
+  useEffect(() => {
+    if (!navigator.geolocation) return;
+
+    const watchId = navigator.geolocation.watchPosition(
+      (pos) => {
+        setUserLocation({
+          lat: pos.coords.latitude,
+          lng: pos.coords.longitude,
+          heading: pos.coords.heading // Available when moving on GPS
+        });
+
+        // Auto-detect closest node if we haven't yet
+        if (!userAutoLocated.current && startPoint === '') {
+           let closestId = '';
+           let minDistance = Infinity;
+           
+           Object.values(nodes).forEach(node => {
+               // Flat euclidean distance is fine for small areas like a campus
+               const dist = Math.hypot(node.lat - pos.coords.latitude, node.lng - pos.coords.longitude);
+               if (dist < minDistance) {
+                   minDistance = dist;
+                   closestId = node.id;
+               }
+           });
+
+           if (closestId) {
+               setStartPoint(closestId);
+               userAutoLocated.current = true;
+           }
+        }
+      },
+      (err) => console.log("Geolocation error:", err),
+      { enableHighAccuracy: true, maximumAge: 10000, timeout: 5000 }
+    );
+
+    return () => navigator.geolocation.clearWatch(watchId);
+  }, [startPoint]);
+
+  // Fallback Device orientation for stationary compass heading (mainly mobile)
+  useEffect(() => {
+    const handleOrientation = (e: any) => {
+       if (e.webkitCompassHeading) {
+         // iOS
+         setCompassHeading(e.webkitCompassHeading);
+       } else if (e.alpha) {
+         // Android (absolute orientation needed)
+         // Note: e.alpha is mathematically opposite to compass heading, but varies wildly on android implementations. 
+         // For a basic fallback we invert alpha:
+         setCompassHeading(360 - e.alpha);
+       }
+    };
+    
+    // Some browsers require requesting device orientation permission first
+    window.addEventListener('deviceorientationabsolute', handleOrientation);
+    window.addEventListener('deviceorientation', handleOrientation);
+
+    return () => {
+       window.removeEventListener('deviceorientationabsolute', handleOrientation);
+       window.removeEventListener('deviceorientation', handleOrientation);
+    };
+  }, []);
 
   const route = useMemo(() => {
     if (!startPoint || !endPoint || startPoint === endPoint) {
@@ -71,7 +166,6 @@ export default function DirectionsPage() {
     });
   }, [route]);
 
-  // Generate arrows for each segment of the polyline
   const arrowMarkers = useMemo(() => {
     if (polylinePositions.length < 2) return [];
     const markers = [];
@@ -80,21 +174,13 @@ export default function DirectionsPage() {
       const start = polylinePositions[i];
       const end = polylinePositions[i + 1];
       
-      // Calculate midpoint
       const midLat = (start[0] + end[0]) / 2;
       const midLng = (start[1] + end[1]) / 2;
       
-      // Calculate angle in degrees
-      // Note: Leaflet maps are tricky with raw lat/lng math, but for small distances, flat Euclidean is fine.
-      // dx = lng2 - lng1 (X axis), dy = lat2 - lat1 (Y axis)
       const dy = end[0] - start[0];
       const dx = end[1] - start[1];
       
-      // Math.atan2 takes (y, x). Standard angle is counter-clockwise from East (X axis).
-      // We want clockwise from North (Y axis) for CSS rotate, so angle = atan2(dx, dy)
-      // Actually because map lat is up, dy is positive when going North. 
-      // Arrow CSS "▲" points UP (North, 0 degrees).
-      let angle = Math.atan2(dx, dy) * 180 / Math.PI;
+      const angle = Math.atan2(dx, dy) * 180 / Math.PI;
       
       markers.push({
         position: [midLat, midLng] as [number, number],
@@ -104,12 +190,20 @@ export default function DirectionsPage() {
     return markers;
   }, [polylinePositions]);
 
-
-  // Center map on Hyderabad default since user modified nodes
   const defaultCenter = [17.545, 78.571] as [number, number]; 
+  const displayHeading = userLocation?.heading ?? compassHeading;
 
   return (
     <div className="p-5 lg:p-8">
+      {/* 
+        Inject a CSS block to style the standard OpenStreetMap 
+        into a bright, visible Dark Mode using CSS filters 
+      */}
+      <style>{`
+        .dark-map-tiles {
+          filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%);
+        }
+      `}</style>
       
       {/* Header */}
       <div className="flex items-center gap-3 mb-6">
@@ -127,15 +221,18 @@ export default function DirectionsPage() {
       {/* Selectors */}
       <div className="flex flex-col gap-3 mb-6">
         <div className="flex items-center gap-3">
-          <div className="w-8 shrink-0 flex justify-center">
+          <div className="w-8 shrink-0 flex justify-center relative">
             <Footprints className="text-gray-400" size={20} />
+            {userLocation && (
+              <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-blue-500 rounded-full border border-dark-bg animate-pulse"></span>
+            )}
           </div>
           <select 
             value={startPoint} 
             onChange={(e) => setStartPoint(e.target.value)}
             className="flex-1 bg-dark-card border border-dark-accent/20 rounded-xl px-4 py-3 outline-none focus:border-purple-500 transition-colors text-white"
           >
-            <option value="" disabled>Select Starting Point (Your Location)</option>
+            <option value="" disabled>Select Starting Point</option>
             {Object.values(nodes).map(node => (
               <option key={`start-${node.id}`} value={node.id}>
                 {node.name}
@@ -171,11 +268,12 @@ export default function DirectionsPage() {
           maxZoom={22}
           style={{ height: '100%', width: '100%', backgroundColor: '#000' }} 
         >
-          {/* Dark Mode CartoDB Map Tiles! Matches theme perfectly */}
+          {/* Use standard vivid OpenStreetMap tiles, combined with our dark-map-tiles filter CSS class. This preserves colors! */}
           <TileLayer
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
-            url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
-            maxNativeZoom={20}
+            className="dark-map-tiles"
+            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            maxNativeZoom={19}
             maxZoom={22}
           />
           
@@ -201,29 +299,37 @@ export default function DirectionsPage() {
           {polylinePositions.length > 0 && (
             <Polyline 
               positions={polylinePositions} 
-              pathOptions={{ color: '#d946ef', weight: 4, opacity: 0.9 }} 
+              pathOptions={{ color: '#d946ef', weight: 6, opacity: 0.8 }} 
             />
           )}
 
-          {/* Render directional arrows */}
           {arrowMarkers.map((arrow, idx) => (
              <Marker 
                key={`arrow-${idx}`}
                position={arrow.position}
                icon={createArrowIcon(arrow.angle)}
-               interactive={false} // So it doesn't block clicks on the map
+               interactive={false} 
              />
           ))}
 
-           <MapEffect polylinePositions={polylinePositions} />
+          {/* User Live Location Marker with Direction Cone */}
+          {userLocation && (
+             <Marker 
+               position={[userLocation.lat, userLocation.lng]}
+               icon={createUserIcon(displayHeading)}
+               interactive={false}
+             />
+          )}
+
+           <MapEffect polylinePositions={polylinePositions} userLocation={userLocation} />
         </MapContainer>
         
-        {!startPoint && (
-           <div className="absolute inset-0 bg-black/50 z-[1000] flex items-center justify-center backdrop-blur-sm">
-             <div className="text-center p-6 glass rounded-2xl mx-4 border border-dark-accent/30 shadow-2xl">
-                <Navigation className="mx-auto mb-4 text-purple-400" size={32} />
-                <h3 className="text-xl font-bold mb-2 text-white">Ready to Navigate?</h3>
-                <p className="text-gray-300 text-sm">Select a starting point to view the fastest route.</p>
+        {!startPoint && !userLocation && (
+           <div className="absolute inset-0 bg-black/50 z-[1000] flex items-center justify-center backdrop-blur-sm pointer-events-none">
+             <div className="text-center p-6 glass rounded-2xl mx-4 border border-dark-accent/30 shadow-2xl pointer-events-auto">
+                <Target className="mx-auto mb-4 text-blue-400 animate-pulse" size={32} />
+                <h3 className="text-xl font-bold mb-2 text-white">Locating You...</h3>
+                <p className="text-gray-300 text-sm">Please allow location permissions, or select a starting point manually.</p>
              </div>
            </div>
         )}
@@ -272,16 +378,19 @@ export default function DirectionsPage() {
   );
 }
 
-function MapEffect({ polylinePositions }: { polylinePositions: [number, number][] }) {
+function MapEffect({ polylinePositions, userLocation }: { polylinePositions: [number, number][], userLocation: any }) {
   const map = useMap();
   useEffect(() => {
     if (polylinePositions.length > 0) {
-      // Small timeout to ensure tiles load before flying
       setTimeout(() => {
          const bounds = L.latLngBounds(polylinePositions);
          map.flyToBounds(bounds, { padding: [50, 50], duration: 1.5 });
       }, 100);
+    } else if (userLocation) {
+      setTimeout(() => {
+         map.flyTo([userLocation.lat, userLocation.lng], 18, { duration: 1.5 });
+      }, 100);
     }
-  }, [map, polylinePositions]);
+  }, [map, polylinePositions, userLocation]);
   return null;
 }
