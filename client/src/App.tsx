@@ -8,6 +8,7 @@ import ProfilePage from './pages/ProfilePage';
 import ManagerDashboard from './pages/ManagerDashboard';
 import EventsPage from './pages/EventsPage';
 import SchedulePage from './pages/SchedulePage';
+import EventAnalyticsPage from './pages/EventAnalyticsPage';
 
 function App() {
   return (
@@ -19,6 +20,7 @@ function App() {
             <Route path="/home" element={<ProtectedRoute><HomePage /></ProtectedRoute>} />
             <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
             <Route path="/manager" element={<ProtectedRoute><ManagerDashboard /></ProtectedRoute>} />
+            <Route path="/events/:eventId/analytics" element={<ProtectedRoute><EventAnalyticsPage /></ProtectedRoute>} />
             <Route path="/events" element={<ProtectedRoute><EventsPage /></ProtectedRoute>} />
             <Route path="/schedule" element={<ProtectedRoute><SchedulePage /></ProtectedRoute>} />
             <Route path="*" element={<Navigate to="/" replace />} />

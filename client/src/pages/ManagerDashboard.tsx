@@ -7,6 +7,7 @@ import CustomDatePicker from '../components/ui/CustomDatePicker';
 import CustomTimePicker from '../components/ui/CustomTimePicker';
 import { useAuth } from '../context/AuthContext';
 import EventCard from '../components/EventCard';
+import { Link } from 'react-router-dom';
 
 interface Event {
   _id: string;
@@ -868,7 +869,17 @@ const ManagerDashboard = () => {
                           </div>
                         </div>
                         <div className="p-5 flex flex-col flex-1">
-                          <h3 className="text-lg font-bold text-white mb-2 line-clamp-1">{event.title}</h3>
+                          {/* Analytics Button and Title Container */}
+                          <div className="flex justify-between items-start gap-2 mb-2">
+                            <h3 className="text-lg font-bold text-white line-clamp-1">{event.title}</h3>
+                            <Link
+                              to={`/events/${event._id}/analytics`}
+                              className="bg-dark-accent hover:bg-dark-accent-light text-white text-xs font-semibold py-1.5 px-3 rounded-lg transition-colors shrink-0 border border-white/10"
+                            >
+                              Analytics
+                            </Link>
+                          </div>
+                          
                           <p className="text-dark-muted text-sm line-clamp-2 mb-4 flex-1">{event.description}</p>
 
                           <div className="flex flex-col gap-2 text-sm text-dark-muted border-t border-white/5 pt-4">
