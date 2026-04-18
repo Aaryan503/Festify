@@ -26,18 +26,17 @@ export const generateEventAnalytics = async (eventId: string) => {
   return analytics;
 };
 
-
-// export const generateEventAnalytics = async (eventId: string) => {
-//   // TEMPORARY MOCK DATA 
-//   console.log(`Mocking analytics for event: ${eventId}`);
-  
-//   return {
-//     totalInterested: 42,
-//     yearBreakdown: {
-//       "23 batch": 15,
-//       "24 batch": 12,
-//       "25 batch": 10,
-//       "26 batch": 5
-//     }
-//   };
-// };
+//Temporary Function
+export const getFestAnalyticsData = async () => {
+  // MOCK DATA: We will replace this with Mongoose Aggregation pipelines later.
+  return {
+    totalUniqueInterested: 142,
+    topEvents: [
+      { title: "Comedy Night", interestedCount: 85 },
+      { title: "RoboWars", interestedCount: 62 },
+      { title: "Jonita Gandhi", interestedCount: 45 },
+      { title: "Binary Battles", interestedCount: 38 },
+      { title: "Dance Off", interestedCount: 29 }
+    ]
+  };
+};
