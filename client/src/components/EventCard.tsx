@@ -2,6 +2,7 @@ import { MapPin } from 'lucide-react';
 import { useState } from 'react';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
+import { Link } from 'react-router-dom';
 
 interface EventCardProps {
   _id: string;
@@ -16,6 +17,7 @@ interface EventCardProps {
   variant?: 'list' | 'featured';
   showInterestedButton?: boolean;
   initialInterestedStatus?: boolean;
+  showAnalyticsButton?: boolean;
 }
 
 const EventCard = ({
@@ -31,10 +33,12 @@ const EventCard = ({
   variant = 'list',
   showInterestedButton = false,
   initialInterestedStatus = false,
+  showAnalyticsButton = false, // Add this line
 }: EventCardProps) => {
   const [isInterested, setIsInterested] = useState(initialInterestedStatus);
   const [isLoading, setIsLoading] = useState(false);
   const { user } = useAuth();
+
   if (variant === 'featured' && image) {
     return (
       <div className="glass rounded-2xl overflow-hidden group cursor-pointer hover:border-dark-accent/30 transition-all duration-300">
@@ -47,7 +51,18 @@ const EventCard = ({
           <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
         </div>
         <div className="p-4">
-          <h3 className="font-bold text-white mb-1">{title}</h3>
+          <div className="flex justify-between items-start gap-2 mb-1">
+            <h3 className="font-bold text-white">{title}</h3>
+            {showAnalyticsButton && (
+              <Link
+                to={`/events/${_id}/analytics`}
+                onClick={(e) => e.stopPropagation()} 
+                className="bg-dark-accent hover:bg-dark-accent-light text-white text-[10px] uppercase tracking-wider font-bold py-1 px-2 rounded-md transition-colors shrink-0 border border-white/10"
+              >
+                Analytics
+              </Link>
+            )}
+          </div>
           {description && (
             <p className="text-dark-muted text-xs mb-2 line-clamp-2">{description}</p>
           )}

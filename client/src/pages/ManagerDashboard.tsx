@@ -640,6 +640,7 @@ const ManagerDashboard = () => {
                       endTime={formatTime(event.endTime)}
                       variant={event.image ? 'featured' : 'list'}
                       showInterestedButton={false}
+                      showAnalyticsButton={true}
                     />
                   </motion.div>
                 ))}
