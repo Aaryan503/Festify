@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import axios from 'axios';
 import { Plus, Calendar, MapPin, Loader2, ArrowLeft, Clock, Edit2, Trash2, Send, Users, MessageCircle, TrendingUp, BarChart3 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -9,6 +9,7 @@ import { useAuth } from '../context/AuthContext';
 import EventCard from '../components/EventCard';
 import { Link } from 'react-router-dom';
 import { useNavigate } from 'react-router-dom';
+import { nodes } from '../utils/navigationGraph';
 import {
   ResponsiveContainer,
   PieChart, Pie, Cell,
@@ -123,6 +124,14 @@ const FestSectionCard = ({ title, children, delay = 0, className = '' }: {
 const ManagerDashboard = () => {
   const navigate = useNavigate();
   const [view, setView] = useState<'list' | 'create' | 'edit'>('list');
+
+  // Build venue options from navigationGraph (only nodes marked as venues)
+  const venueOptions = useMemo(() =>
+    Object.values(nodes)
+      .filter(n => n.isVenue)
+      .map(n => ({ id: n.name, label: n.name })),
+    []
+  );
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
@@ -252,6 +261,12 @@ const ManagerDashboard = () => {
       const [endH, endM] = endTime.split(':').map(Number);
       endDateTime.setHours(endH, endM);
 
+      if (startDateTime <= new Date()) {
+        alert('Event must be scheduled in the future');
+        setLoading(false);
+        return;
+      }
+
       if (endDateTime <= startDateTime) {
         alert('End time must be after start time');
         return;
@@ -345,6 +360,13 @@ const ManagerDashboard = () => {
       const endDateTime = new Date(selectedDate);
       const [endH, endM] = endTime.split(':').map(Number);
       endDateTime.setHours(endH, endM);
+
+      // Future date validation
+      if (startDateTime <= new Date()) {
+        alert('Event must be scheduled in the future');
+        setLoading(false);
+        return;
+      }
 
       // Basic validation
       if (endDateTime <= startDateTime) {
@@ -500,20 +522,14 @@ const ManagerDashboard = () => {
                         ]}
                       />
 
-                      <div>
-                        <label className="block text-sm font-medium text-dark-muted mb-2">Location</label>
-                        <div className="relative">
-                          <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 text-dark-muted" size={18} />
-                          <input
-                            type="text"
-                            required
-                            className="w-full bg-white/5 border border-white/10 rounded-xl pl-12 pr-4 py-3 text-white focus:outline-none focus:border-dark-accent/50 focus:ring-1 focus:ring-dark-accent/50 transition-colors placeholder:text-dark-muted/50"
-                            placeholder="Venue or Address"
-                            value={location}
-                            onChange={(e) => setLocation(e.target.value)}
-                          />
-                        </div>
-                      </div>
+                      <CustomSelect
+                        label="Location"
+                        value={location}
+                        onChange={setLocation}
+                        options={venueOptions}
+                        placeholder="Select a venue"
+                        icon={<MapPin size={18} />}
+                      />
                     </div>
                   </div>
 
@@ -523,7 +539,7 @@ const ManagerDashboard = () => {
                       Date & Time
                     </h3>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                      <CustomDatePicker label="Date" value={selectedDate} onChange={setSelectedDate} />
+                      <CustomDatePicker label="Date" value={selectedDate} onChange={setSelectedDate} minDate={new Date()} />
                       <CustomTimePicker label="Start Time" value={startTime} onChange={setStartTime} />
                       <CustomTimePicker label="End Time" value={endTime} onChange={setEndTime} />
                     </div>
@@ -1009,20 +1025,14 @@ const ManagerDashboard = () => {
                           ]}
                         />
 
-                        <div>
-                          <label className="block text-sm font-medium text-dark-muted mb-2">Location</label>
-                          <div className="relative">
-                            <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 text-dark-muted" size={18} />
-                            <input
-                              type="text"
-                              required
-                              className="w-full bg-white/5 border border-white/10 rounded-xl pl-12 pr-4 py-3 text-white focus:outline-none focus:border-dark-accent/50 focus:ring-1 focus:ring-dark-accent/50 transition-colors placeholder:text-dark-muted/50"
-                              placeholder="Venue or Address"
-                              value={location}
-                              onChange={(e) => setLocation(e.target.value)}
-                            />
-                          </div>
-                        </div>
+                        <CustomSelect
+                          label="Location"
+                          value={location}
+                          onChange={setLocation}
+                          options={venueOptions}
+                          placeholder="Select a venue"
+                          icon={<MapPin size={18} />}
+                        />
                       </div>
                     </div>
 
@@ -1037,6 +1047,7 @@ const ManagerDashboard = () => {
                           label="Date"
                           value={selectedDate}
                           onChange={setSelectedDate}
+                          minDate={new Date()}
                         />
                         <CustomTimePicker
                           label="Start Time"

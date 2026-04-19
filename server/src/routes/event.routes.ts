@@ -16,6 +16,20 @@ const PUBLIC_APPROVED_FILTER: any = {
   $or: [{ status: "accepted" }, { status: { $exists: false } }],
 };
 
+// Valid campus venues (must match navigationGraph venue names)
+const VALID_VENUES = [
+  "Room F103",
+  "Lecture Theater Complex",
+  "Room F208",
+  "Room G206",
+  "Room G104",
+  "Library Lawns",
+  "Library",
+  "Amphitheatre",
+  "E Block Entrance",
+  "Stage 1",
+];
+
 // Create an event 
 router.post("/", isAuthenticated, async (req, res) => {
   try {
@@ -25,6 +39,16 @@ router.post("/", isAuthenticated, async (req, res) => {
     }
 
     const { title, description, image, location, startTime, endTime, category } = req.body;
+
+    // Validate: event must be in the future
+    if (new Date(startTime) <= new Date()) {
+      return res.status(400).json({ message: "Event must be scheduled in the future." });
+    }
+
+    // Validate: location must be a known campus venue
+    if (!VALID_VENUES.includes(location)) {
+      return res.status(400).json({ message: `Invalid venue. Must be one of: ${VALID_VENUES.join(", ")}` });
+    }
 
     const status =
       req.user?.role === UserRole.FestOrganizingBody ? "accepted" : "pending";

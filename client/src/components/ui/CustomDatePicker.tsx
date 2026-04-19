@@ -7,9 +7,10 @@ interface CustomDatePickerProps {
   value: Date | null;
   onChange: (date: Date) => void;
   placeholder?: string;
+  minDate?: Date;
 }
 
-const CustomDatePicker = ({ label, value, onChange, placeholder = "Select date" }: CustomDatePickerProps) => {
+const CustomDatePicker = ({ label, value, onChange, placeholder = "Select date", minDate }: CustomDatePickerProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const [currentDate, setCurrentDate] = useState(new Date()); // State for navigation
   const [selectedDate, setSelectedDate] = useState<Date | null>(value);
@@ -53,7 +54,15 @@ const CustomDatePicker = ({ label, value, onChange, placeholder = "Select date" 
     setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1));
   };
 
+  const canGoPrev = () => {
+    if (!minDate) return true;
+    const prevMonthDate = new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1);
+    return prevMonthDate.getFullYear() > minDate.getFullYear() ||
+      (prevMonthDate.getFullYear() === minDate.getFullYear() && prevMonthDate.getMonth() >= minDate.getMonth());
+  };
+
   const prevMonth = () => {
+    if (!canGoPrev()) return;
     setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1));
   };
 
@@ -75,6 +84,9 @@ const CustomDatePicker = ({ label, value, onChange, placeholder = "Select date" 
 
     // Days of current month
     for (let i = 1; i <= totalDays; i++) {
+        const dayDate = new Date(year, month, i);
+        const isDisabled = minDate ? dayDate < new Date(minDate.getFullYear(), minDate.getMonth(), minDate.getDate()) : false;
+
         const isSelected = selectedDate && 
             selectedDate.getDate() === i && 
             selectedDate.getMonth() === month && 
@@ -88,11 +100,13 @@ const CustomDatePicker = ({ label, value, onChange, placeholder = "Select date" 
             <button
                 type="button"
                 key={i}
-                onClick={() => handleDayClick(i)}
-                className={`h-8 w-8 rounded-full text-sm flex items-center justify-center transition-colors cursor-pointer 
-                    ${isSelected ? 'bg-dark-accent text-white font-bold shadow-lg shadow-dark-accent/30' : 
-                      isToday ? 'bg-white/10 text-white font-medium border border-dark-accent' : 
-                      'text-dark-muted hover:bg-white/5 hover:text-white'}`}
+                onClick={() => !isDisabled && handleDayClick(i)}
+                disabled={isDisabled}
+                className={`h-8 w-8 rounded-full text-sm flex items-center justify-center transition-colors 
+                    ${isDisabled ? 'text-white/15 cursor-not-allowed' :
+                      isSelected ? 'bg-dark-accent text-white font-bold shadow-lg shadow-dark-accent/30 cursor-pointer' : 
+                      isToday ? 'bg-white/10 text-white font-medium border border-dark-accent cursor-pointer' : 
+                      'text-dark-muted hover:bg-white/5 hover:text-white cursor-pointer'}`}
             >
                 {i}
             </button>
@@ -126,7 +140,7 @@ const CustomDatePicker = ({ label, value, onChange, placeholder = "Select date" 
             className="absolute z-[9999] mt-2 bg-[#1A1A2E] border border-white/10 rounded-xl shadow-2xl p-4 w-72 backdrop-blur-xl"
           >
             <div className="flex items-center justify-between mb-4">
-                <button type="button" onClick={prevMonth} className="p-1 hover:bg-white/5 rounded-lg text-dark-muted hover:text-white transition-colors cursor-pointer">
+                <button type="button" onClick={prevMonth} disabled={!canGoPrev()} className={`p-1 rounded-lg transition-colors ${canGoPrev() ? 'hover:bg-white/5 text-dark-muted hover:text-white cursor-pointer' : 'text-white/15 cursor-not-allowed'}`}>
                     <ChevronLeft size={20} />
                 </button>
                 <div className="font-semibold text-white">
