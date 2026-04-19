@@ -4,7 +4,7 @@ import { MapContainer, TileLayer, Polyline, Marker, Popup, useMap, Tooltip } fro
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { nodes, findShortestPath } from '../utils/navigationGraph';
-import { MapPin, Navigation, ArrowLeft, Footprints, Target } from 'lucide-react';
+import { MapPin, ArrowLeft, Footprints, Target } from 'lucide-react';
 
 // Custom Map node marker
 const createCustomIcon = (isVenue: boolean) => L.divIcon({
