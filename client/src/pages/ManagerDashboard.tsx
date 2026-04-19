@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Plus, Calendar, MapPin, Loader2, ArrowLeft, Clock, Edit2, Trash2, Send} from 'lucide-react';
+import { Plus, Calendar, MapPin, Loader2, ArrowLeft, Clock, Edit2, Trash2, Send, Users, MessageCircle, TrendingUp, BarChart3 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import CustomSelect from '../components/ui/CustomSelect';
 import CustomDatePicker from '../components/ui/CustomDatePicker';
@@ -8,8 +8,15 @@ import CustomTimePicker from '../components/ui/CustomTimePicker';
 import { useAuth } from '../context/AuthContext';
 import EventCard from '../components/EventCard';
 import { Link } from 'react-router-dom';
-
 import { useNavigate } from 'react-router-dom';
+import {
+  ResponsiveContainer,
+  PieChart, Pie, Cell,
+  AreaChart, Area,
+  BarChart, Bar,
+  XAxis, YAxis, CartesianGrid, Tooltip,
+  Legend
+} from 'recharts';
 interface Event {
   _id: string;
   title: string;
@@ -46,8 +53,72 @@ interface TopEvent {
 
 interface FestAnalyticsData {
   totalUniqueInterested: number;
+  totalEvents: number;
+  totalChatMessages: number;
+  avgInterestPerEvent: number;
   topEvents: TopEvent[];
+  categoryDistribution: { category: string; count: number }[];
+  interestTrend: { date: string; count: number }[];
+  overallBatchBreakdown: Record<string, number>;
+  eventsTimeline: { date: string; count: number }[];
+  venuePopularity: { venue: string; interestedCount: number }[];
 }
+
+// ─── Fest Analytics chart colors ───
+const FEST_PIE_COLORS = ['#6C5DD3', '#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#14B8A6'];
+const FEST_TOOLTIP = {
+  contentStyle: {
+    background: 'rgba(26,26,46,0.95)',
+    border: '1px solid rgba(255,255,255,0.1)',
+    borderRadius: '12px',
+    color: '#fff',
+    fontSize: '13px',
+    backdropFilter: 'blur(12px)',
+  },
+  itemStyle: { color: '#A78BFA' },
+  labelStyle: { color: '#8888A0', fontWeight: 600 },
+};
+
+const FestStatCard = ({ icon: Icon, label, value, sub, color, delay }: {
+  icon: any; label: string; value: string | number; sub?: string; color: string; delay: number;
+}) => (
+  <motion.div
+    initial={{ opacity: 0, y: 20 }}
+    animate={{ opacity: 1, y: 0 }}
+    transition={{ delay, duration: 0.5 }}
+    className="p-6 rounded-2xl border border-white/5 shadow-xl flex flex-col gap-3"
+    style={{ background: 'rgba(26,26,46,0.6)', backdropFilter: 'blur(16px)' }}
+  >
+    <div className="flex items-center gap-3">
+      <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: `${color}22`, border: `1px solid ${color}44` }}>
+        <Icon size={20} style={{ color }} />
+      </div>
+      <span className="text-dark-muted text-sm font-medium uppercase tracking-wider">{label}</span>
+    </div>
+    <p className="text-4xl font-bold bg-clip-text text-transparent" style={{ backgroundImage: `linear-gradient(135deg, ${color}, ${color}99)`, WebkitBackgroundClip: 'text' }}>
+      {value}
+    </p>
+    {sub && <p className="text-xs text-dark-muted">{sub}</p>}
+  </motion.div>
+);
+
+const FestSectionCard = ({ title, children, delay = 0, className = '' }: {
+  title: string; children: React.ReactNode; delay?: number; className?: string;
+}) => (
+  <motion.div
+    initial={{ opacity: 0, y: 20 }}
+    animate={{ opacity: 1, y: 0 }}
+    transition={{ delay, duration: 0.5 }}
+    className={`p-6 rounded-2xl border border-white/5 shadow-xl ${className}`}
+    style={{ background: 'rgba(26,26,46,0.6)', backdropFilter: 'blur(16px)' }}
+  >
+    <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+      <BarChart3 size={18} className="text-dark-accent" />
+      {title}
+    </h3>
+    {children}
+  </motion.div>
+);
 
 const ManagerDashboard = () => {
   const navigate = useNavigate();
@@ -585,43 +656,182 @@ const ManagerDashboard = () => {
               </div>
             </div>
           ) : approvalTab === 'analytics' ? (
-            <div className="max-w-5xl mx-auto space-y-6">
+            <div className="max-w-7xl mx-auto space-y-6">
               {analyticsLoading || !festAnalytics ? (
                 <div className="flex justify-center items-center h-64">
                   <Loader2 size={32} className="animate-spin text-dark-accent" />
                 </div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  {/* Left Column: Total Unique Interested */}
-                  <div className="glass-card p-8 rounded-3xl border border-white/5 shadow-xl flex flex-col justify-center items-center text-center">
-                    <h2 className="text-dark-muted text-sm font-semibold uppercase tracking-widest mb-2">Total Unique Interested</h2>
-                    <p className="text-7xl font-bold bg-clip-text text-transparent bg-gradient-to-br from-purple-400 to-dark-accent">
-                      {festAnalytics.totalUniqueInterested}
-                    </p>
-                    <p className="text-xs text-dark-muted mt-4">Across all active events</p>
+                <>
+                  {/* KPI Cards */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <FestStatCard icon={Users} label="Unique Users" value={festAnalytics.totalUniqueInterested} sub="Across all events" color="#6C5DD3" delay={0.1} />
+                    <FestStatCard icon={Calendar} label="Total Events" value={festAnalytics.totalEvents} sub="Accepted events" color="#3B82F6" delay={0.15} />
+                    <FestStatCard icon={MessageCircle} label="Chat Messages" value={festAnalytics.totalChatMessages} sub="Total discussions" color="#10B981" delay={0.2} />
+                    <FestStatCard icon={TrendingUp} label="Avg Interest" value={festAnalytics.avgInterestPerEvent} sub="Per event" color="#F59E0B" delay={0.25} />
                   </div>
 
-                  {/* Right Column: Leaderboard */}
-                  <div className="md:col-span-2 glass-card p-8 rounded-3xl border border-white/5 shadow-xl">
-                    <h2 className="text-xl font-bold text-white mb-6">Top Performing Events</h2>
-                    <div className="space-y-4">
-                      {festAnalytics.topEvents.map((event, index) => (
-                        <div key={index} className="flex items-center justify-between p-4 rounded-xl bg-white/5 border border-white/5 hover:border-dark-accent/30 transition-colors">
-                          <div className="flex items-center gap-4">
-                            <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm ${index === 0 ? 'bg-yellow-500/20 text-yellow-400' : index === 1 ? 'bg-gray-300/20 text-gray-300' : index === 2 ? 'bg-amber-700/20 text-amber-500' : 'bg-dark-accent/20 text-white'}`}>
-                              #{index + 1}
-                            </div>
-                            <h3 className="text-white font-medium">{event.title}</h3>
-                          </div>
-                          <div className="bg-dark-accent/20 px-3 py-1 rounded-lg border border-dark-accent/30">
-                            <span className="text-white font-bold">{event.interestedCount}</span>
-                            <span className="text-dark-muted text-xs ml-1">interested</span>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
+                  {/* Row 2: Top Events + Category Distribution */}
+                  <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
+                    <FestSectionCard title="Top Performing Events" delay={0.3} className="lg:col-span-3">
+                      {festAnalytics.topEvents.length > 0 ? (
+                        <ResponsiveContainer width="100%" height={280}>
+                          <BarChart data={festAnalytics.topEvents} layout="vertical">
+                            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" horizontal={false} />
+                            <XAxis type="number" stroke="#8888A0" fontSize={11} tickLine={false} axisLine={false} allowDecimals={false} />
+                            <YAxis
+                              type="category" dataKey="title" stroke="#8888A0" fontSize={11} tickLine={false} axisLine={false} width={130}
+                              tick={({ x, y, payload }: any) => (
+                                <text x={x} y={y} dy={4} textAnchor="end" fill="#8888A0" fontSize={11}>
+                                  {payload.value.length > 18 ? payload.value.slice(0, 18) + '…' : payload.value}
+                                </text>
+                              )}
+                            />
+                            <Tooltip {...FEST_TOOLTIP} />
+                            <Bar dataKey="interestedCount" name="Interested" fill="#6C5DD3" radius={[0, 4, 4, 0]} barSize={22} />
+                          </BarChart>
+                        </ResponsiveContainer>
+                      ) : (
+                        <div className="h-[280px] flex items-center justify-center text-dark-muted text-sm">No data yet</div>
+                      )}
+                    </FestSectionCard>
+
+                    <FestSectionCard title="Category Distribution" delay={0.35} className="lg:col-span-2">
+                      {festAnalytics.categoryDistribution.length > 0 ? (
+                        <ResponsiveContainer width="100%" height={280}>
+                          <PieChart>
+                            <Pie
+                              data={festAnalytics.categoryDistribution}
+                              cx="50%" cy="50%"
+                              innerRadius={55} outerRadius={95}
+                              paddingAngle={3}
+                              dataKey="count" nameKey="category"
+                              stroke="none"
+                            >
+                              {festAnalytics.categoryDistribution.map((_: any, index: number) => (
+                                <Cell key={index} fill={FEST_PIE_COLORS[index % FEST_PIE_COLORS.length]} />
+                              ))}
+                            </Pie>
+                            <Tooltip {...FEST_TOOLTIP} />
+                            <Legend
+                              verticalAlign="bottom" iconType="circle" iconSize={8}
+                              formatter={(value: string) => <span style={{ color: '#8888A0', fontSize: '12px' }}>{value}</span>}
+                            />
+                          </PieChart>
+                        </ResponsiveContainer>
+                      ) : (
+                        <div className="h-[280px] flex items-center justify-center text-dark-muted text-sm">No data yet</div>
+                      )}
+                    </FestSectionCard>
                   </div>
-                </div>
+
+                  {/* Row 3: Interest Trend + Batch Breakdown */}
+                  <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
+                    <FestSectionCard title="Interest Trend" delay={0.4} className="lg:col-span-3">
+                      {festAnalytics.interestTrend.length > 0 ? (
+                        <ResponsiveContainer width="100%" height={260}>
+                          <AreaChart data={festAnalytics.interestTrend}>
+                            <defs>
+                              <linearGradient id="festTrendGrad" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="0%" stopColor="#6C5DD3" stopOpacity={0.4} />
+                                <stop offset="100%" stopColor="#6C5DD3" stopOpacity={0} />
+                              </linearGradient>
+                            </defs>
+                            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+                            <XAxis
+                              dataKey="date" stroke="#8888A0" fontSize={11} tickLine={false} axisLine={false}
+                              tickFormatter={(d: string) => new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                            />
+                            <YAxis stroke="#8888A0" fontSize={11} tickLine={false} axisLine={false} allowDecimals={false} />
+                            <Tooltip
+                              {...FEST_TOOLTIP}
+                              labelFormatter={(d: any) => new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                            />
+                            <Area type="monotone" dataKey="count" stroke="#6C5DD3" fill="url(#festTrendGrad)" strokeWidth={2} name="New Interests" dot={false} />
+                          </AreaChart>
+                        </ResponsiveContainer>
+                      ) : (
+                        <div className="h-[260px] flex items-center justify-center text-dark-muted text-sm">No data yet</div>
+                      )}
+                    </FestSectionCard>
+
+                    <FestSectionCard title="Batch Breakdown" delay={0.45} className="lg:col-span-2">
+                      {Object.keys(festAnalytics.overallBatchBreakdown).length > 0 ? (
+                        <ResponsiveContainer width="100%" height={260}>
+                          <PieChart>
+                            <Pie
+                              data={Object.entries(festAnalytics.overallBatchBreakdown).map(([name, value]) => ({ name, value }))}
+                              cx="50%" cy="50%"
+                              innerRadius={50} outerRadius={85}
+                              paddingAngle={3}
+                              dataKey="value"
+                              stroke="none"
+                            >
+                              {Object.entries(festAnalytics.overallBatchBreakdown).map((_: any, index: number) => (
+                                <Cell key={index} fill={FEST_PIE_COLORS[index % FEST_PIE_COLORS.length]} />
+                              ))}
+                            </Pie>
+                            <Tooltip {...FEST_TOOLTIP} />
+                            <Legend
+                              verticalAlign="bottom" iconType="circle" iconSize={8}
+                              formatter={(value: string) => <span style={{ color: '#8888A0', fontSize: '12px' }}>{value}</span>}
+                            />
+                          </PieChart>
+                        </ResponsiveContainer>
+                      ) : (
+                        <div className="h-[260px] flex items-center justify-center text-dark-muted text-sm">No batch data</div>
+                      )}
+                    </FestSectionCard>
+                  </div>
+
+                  {/* Row 4: Events Timeline + Venue Popularity */}
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                    <FestSectionCard title="Events Timeline" delay={0.5}>
+                      {festAnalytics.eventsTimeline.length > 0 ? (
+                        <ResponsiveContainer width="100%" height={260}>
+                          <BarChart data={festAnalytics.eventsTimeline}>
+                            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+                            <XAxis
+                              dataKey="date" stroke="#8888A0" fontSize={11} tickLine={false} axisLine={false}
+                              tickFormatter={(d: string) => new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                            />
+                            <YAxis stroke="#8888A0" fontSize={11} tickLine={false} axisLine={false} allowDecimals={false} />
+                            <Tooltip
+                              {...FEST_TOOLTIP}
+                              labelFormatter={(d: any) => new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                            />
+                            <Bar dataKey="count" fill="#3B82F6" radius={[4, 4, 0, 0]} name="Events" barSize={24} />
+                          </BarChart>
+                        </ResponsiveContainer>
+                      ) : (
+                        <div className="h-[260px] flex items-center justify-center text-dark-muted text-sm">No data yet</div>
+                      )}
+                    </FestSectionCard>
+
+                    <FestSectionCard title="Venue Popularity" delay={0.55}>
+                      {festAnalytics.venuePopularity.length > 0 ? (
+                        <ResponsiveContainer width="100%" height={260}>
+                          <BarChart data={festAnalytics.venuePopularity} layout="vertical">
+                            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" horizontal={false} />
+                            <XAxis type="number" stroke="#8888A0" fontSize={11} tickLine={false} axisLine={false} allowDecimals={false} />
+                            <YAxis
+                              type="category" dataKey="venue" stroke="#8888A0" fontSize={11} tickLine={false} axisLine={false} width={120}
+                              tick={({ x, y, payload }: any) => (
+                                <text x={x} y={y} dy={4} textAnchor="end" fill="#8888A0" fontSize={11}>
+                                  {payload.value.length > 16 ? payload.value.slice(0, 16) + '…' : payload.value}
+                                </text>
+                              )}
+                            />
+                            <Tooltip {...FEST_TOOLTIP} />
+                            <Bar dataKey="interestedCount" name="Interested" fill="#10B981" radius={[0, 4, 4, 0]} barSize={20} />
+                          </BarChart>
+                        </ResponsiveContainer>
+                      ) : (
+                        <div className="h-[260px] flex items-center justify-center text-dark-muted text-sm">No data yet</div>
+                      )}
+                    </FestSectionCard>
+                  </div>
+                </>
               )}
             </div>
           ) : approvalsLoading ? (
