@@ -25,16 +25,18 @@ export const nodes: Record<string, NavNode> = {
   RockGarden: {id: 'Rock Garden', name: 'Rock Garden', lat: 17.544369093209248, lng: 78.57305659407868, isVenue: false},
   ChessGarden: {id: 'Chess Garden', name: 'Chess Garden', lat: 17.545930587388355, lng: 78.56969696331403, isVenue: false},
   OAT: {id: 'OAT', name: 'Amphitheatre', lat:17.544387044647223, lng: 78.57097449067834, isVenue: true},
-  Fountain: {id: 'Fountain', name: 'Entry Fountain', lat: 17.544387044647223, lng: 78.57097449067834, isVenue: false},
+  Fountain: {id: 'Fountain', name: 'Entry Fountain', lat: 17.546819681008504,lng:  78.5724083258763, isVenue: false},
   RoundAbout1: {id: 'RoundAbout1', name: 'Roundabout 1', lat: 17.544568120347215, lng: 78.57367126290178, isVenue: false},
-  RoundAbout2: {id: 'RoundAbout2', name: 'Roundabout 2', lat: 17.544568120347215, lng: 78.57367126290178, isVenue: false},
+  RoundAbout2: {id: 'RoundAbout2', name: 'Roundabout 2', lat: 17.543791270317485, lng: 78.57326054464582, isVenue: false},
   EBlockEntrance: {id: 'EBlockEntrance', name: 'E Block Entrance', lat: 17.543628273937063, lng: 78.5719744069708, isVenue: true},
   Stage1: {id: 'Stage1', name: 'Stage 1', lat: 17.543628273937063, lng: 78.5719744069708, isVenue: true},
   PublicGardens: {id: 'PublicGardens', name: 'Public Garden', lat: 17.543628273937063, lng: 78.5719744069708, isVenue: false},
   CBlockEntrance: {id: 'CBlockEntrance', name: 'C Block Entrance', lat: 17.54483719029753, lng: 78.57194108337292, isVenue:false},
   Mess1: {id: 'Mess1', name: 'Mess 1', lat: 17.54259499008356, lng: 78.57403812515173, isVenue: false},
   CentralWorkshop: {id: 'CentralWorkshop', name: 'Central Workshop', lat: 17.54358865399951, lng: 78.57046185447192, isVenue: false},
-  DBlockEntrance: {id: 'DBlockEntrance', name: 'D Block Entrance', lat: 17.544332499159808, lng: 78.57200108827854, isVenue: false}
+  DBlockEntrance: {id: 'DBlockEntrance', name: 'D Block Entrance', lat: 17.544332499159808, lng: 78.57200108827854, isVenue: false },
+  HBlockEntrance: { id: 'HBlockEntrance', name: 'H Block Entrance', lat: 17.546219862857107, lng: 78.57044640573686, isVenue: false },
+  KBlockEntrance: { id: 'KBlockEntrance', name: 'K Block Entrance', lat: 17.545178693613412, lng: 78.56985377841441, isVenue: false }
 };
 
 export const edges: NavEdge[] = [
@@ -66,7 +68,7 @@ export const edges: NavEdge[] = [
   {from: 'PublicGardens', to: 'Fountain', distance: 100, instruction: 'Walk straight ahead towards the main gate with back to roundabout 1'},
 
   {from: 'PublicGardens', to: 'RoundAbout1', distance: 50, instruction: 'Walk straight towards the roundabout'},
-  {from: 'Auditorium', to: 'LibraryLawns', distance: 50, instruction: 'Walk straight towards the public gardens'},
+  {from: 'RoundAbout1', to: 'PublicGardens', distance: 50, instruction: 'Walk straight towards the public gardens'},
 
   {from: 'RoundAbout1', to: 'RoundAbout2', distance: 20, instruction: 'Walk straight towards the second roundabout in front of rock garden'},
   {from: 'RoundAbout2', to: 'RoundAbout1', distance: 20, instruction: 'Walk straight towards the first roundabout in front of rock garden, near public gardens'},
@@ -75,13 +77,25 @@ export const edges: NavEdge[] = [
   {from: 'DBlockEntrance', to: 'RoundAbout2', distance: 25, instruction: 'Walk through the stairs that lead to the rock gardens, and through the rock gardens'},    
 
   {from: 'OAT', to: 'Central Workshop', distance: 10, instruction: 'Walk past the OAT through the side passage and into the ground, continue straight'},
-  {from: 'Cenral Workshop', to: 'OAT', distance: 10, instruction: 'Walk into the grounds right in front of Workshop and continue straight'},    
+  {from: 'Central Workshop', to: 'OAT', distance: 10, instruction: 'Walk into the grounds right in front of Workshop and continue straight'},    
 
   {from: 'LTC', to: 'OAT', distance: 10, instruction: 'Walk straight towards the open area with back towards the library lawns.'},
   {from: 'OAT', to: 'LTC', distance: 10, instruction: 'With back towards OAT, walk towards library lawns.'},
 
-  {from: 'Mess1', to: 'RoundAbout1', distance: 20, instruction: 'Walk straight towards the roundabout'},
-  {from: 'RoundAbout1', to: 'Mess1', distance: 20, instruction: 'Walk straight towards the mess'},
+  {from: 'Mess1', to: 'RoundAbout2', distance: 20, instruction: 'Walk straight towards the roundabout'},
+  {from: 'RoundAbout2', to: 'Mess1', distance: 20, instruction: 'Walk straight towards the mess'},
+
+  {from: 'DBlockEntrance', to: 'LTC', distance: 10, instruction: 'Walk straight towards the Lecture Theatre Complex'},
+  {from: 'LTC', to: 'DBlockEntrance', distance: 10, instruction: 'Walk straight towards DBlock Entrance'},
+
+  { from: 'KBlockEntrance', to: 'Ishtara', distance: 50, instruction: 'Walk south-east towards Ishtara Cafe' },
+  { from: 'Ishtara', to: 'KBlockEntrance', distance: 50, instruction: 'Walk north-west towards K Block' },
+
+  { from: 'HBlockEntrance', to: 'ChessGarden', distance: 40, instruction: 'Walk west towards the Chess Garden' },
+  { from: 'ChessGarden', to: 'HBlockEntrance', distance: 40, instruction: 'Walk east towards H Block Entrance' },
+
+  { from: 'KBlockEntrance', to: 'ChessGarden', distance: 40, instruction: 'Walk north towards the Chess Garden' },
+  { from: 'ChessGarden', to: 'KBlockEntrance', distance: 40, instruction: 'Walk south towards K Block Entrance' }
 ];
 
 /**
