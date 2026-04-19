@@ -58,14 +58,15 @@ const EventsPage = () => {
   // Category options - you can fetch these from backend or define them
   const categoryOptions = [
     { id: '', label: 'All Categories' },
-    { id: 'concert', label: 'Concert' },
-    { id: 'workshop', label: 'Workshop' },
-    { id: 'competition', label: 'Competition' },
-    { id: 'exhibition', label: 'Exhibition' },
-    { id: 'seminar', label: 'Seminar' },
-    { id: 'sports', label: 'Sports' },
-    { id: 'cultural', label: 'Cultural' },
-    { id: 'other', label: 'Other' },
+    { id: 'Music', label: 'Music' },
+    { id: 'Dance', label: 'Dance' },
+    { id: 'Technical', label: 'Technical' },
+    { id: 'Workshop', label: 'Workshop' },
+    { id: 'Sports', label: 'Sports' },
+    { id: 'Esports', label: 'Esports' },
+    { id: 'Cultural', label: 'Cultural' },
+    { id: 'Art', label: 'Art' },
+    { id: 'Other', label: 'Other' },
   ];
 
   const fetchEvents = useCallback(async () => {

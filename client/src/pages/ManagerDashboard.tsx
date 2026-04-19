@@ -514,10 +514,13 @@ const ManagerDashboard = () => {
                         onChange={setCategory}
                         options={[
                           { id: 'Music', label: 'Music' },
+                          { id: 'Dance', label: 'Dance' },
+                          { id: 'Technical', label: 'Technical' },
                           { id: 'Workshop', label: 'Workshop' },
-                          { id: 'Tech', label: 'Tech' },
-                          { id: 'Art', label: 'Art' },
                           { id: 'Sports', label: 'Sports' },
+                          { id: 'Esports', label: 'Esports' },
+                          { id: 'Cultural', label: 'Cultural' },
+                          { id: 'Art', label: 'Art' },
                           { id: 'Other', label: 'Other' },
                         ]}
                       />
@@ -1017,10 +1020,13 @@ const ManagerDashboard = () => {
                           onChange={setCategory}
                           options={[
                             { id: 'Music', label: 'Music' },
+                            { id: 'Dance', label: 'Dance' },
+                            { id: 'Technical', label: 'Technical' },
                             { id: 'Workshop', label: 'Workshop' },
-                            { id: 'Tech', label: 'Tech' },
-                            { id: 'Art', label: 'Art' },
                             { id: 'Sports', label: 'Sports' },
+                            { id: 'Esports', label: 'Esports' },
+                            { id: 'Cultural', label: 'Cultural' },
+                            { id: 'Art', label: 'Art' },
                             { id: 'Other', label: 'Other' },
                           ]}
                         />
