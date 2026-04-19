@@ -4,6 +4,7 @@ import Event from "../models/event.model";
 import InterestedUsers from "../models/interestedUsers.model";
 import { UserRole } from "../models/userRole";
 import { generateEventAnalytics } from "../services/event.service";
+import { getFestAnalyticsData } from '../services/event.service';
 
 
 const router = express.Router();
@@ -248,6 +249,16 @@ router.get("/filter", async (req, res) => {
   } catch (error) {
     console.error("Error filtering events:", error);
     res.status(500).json({ message: "Server error" });
+  }
+});
+
+router.get('/fest-analytics', isAuthenticated, async (req, res) => {
+  try {
+    const analytics = await getFestAnalyticsData();
+    res.status(200).json(analytics);
+  } catch (error) {
+    console.error('Error fetching fest analytics:', error);
+    res.status(500).json({ message: 'Server error fetching fest analytics' });
   }
 });
 

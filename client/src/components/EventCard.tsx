@@ -2,6 +2,7 @@ import { MapPin, Heart, MessageCircle, Navigation } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
+import { Link } from 'react-router-dom';
 import { useNavigate } from 'react-router-dom';
 
 interface EventCardProps {
@@ -17,6 +18,7 @@ interface EventCardProps {
   variant?: 'list' | 'featured';
   showInterestedButton?: boolean;
   initialInterestedStatus?: boolean;
+  showAnalyticsButton?: boolean;
   onInterestChange?: (nextInterested: boolean) => void;
   showChatButton?: boolean;
   onViewChat?: () => void;
@@ -35,6 +37,7 @@ const EventCard = ({
   variant = 'list',
   showInterestedButton = false,
   initialInterestedStatus = false,
+  showAnalyticsButton = false, // Add this line
   onInterestChange,
   showChatButton = false,
   onViewChat,
@@ -92,6 +95,19 @@ const EventCard = ({
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
         </div>
+        <div className="p-4">
+          <div className="flex justify-between items-start gap-2 mb-1">
+            <h3 className="font-bold text-white">{title}</h3>
+            {showAnalyticsButton && (
+              <Link
+                to={`/events/${_id}/analytics`}
+                onClick={(e) => e.stopPropagation()} 
+                className="bg-dark-accent hover:bg-dark-accent-light text-white text-[10px] uppercase tracking-wider font-bold py-1 px-2 rounded-md transition-colors shrink-0 border border-white/10"
+              >
+                Analytics
+              </Link>
+            )}
+          </div>
         <div className="p-4 flex flex-col flex-grow">
           <h3 className="font-bold text-white mb-1">{title}</h3>
           {description && (

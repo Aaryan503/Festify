@@ -39,6 +39,16 @@ interface ApprovalEvent {
   };
 }
 
+interface TopEvent {
+  title: string;
+  interestedCount: number;
+}
+
+interface FestAnalyticsData {
+  totalUniqueInterested: number;
+  topEvents: TopEvent[];
+}
+
 const ManagerDashboard = () => {
   const navigate = useNavigate();
   const [view, setView] = useState<'list' | 'create' | 'edit'>('list');
@@ -50,7 +60,7 @@ const ManagerDashboard = () => {
   const { user, loading: authLoading } = useAuth();
   const role = user?.role;
 
-  const [approvalTab, setApprovalTab] = useState<'pending' | 'approved' | 'create' | 'promote'>('pending');
+  const [approvalTab, setApprovalTab] = useState<'pending' | 'approved' | 'create' | 'promote' | 'analytics'>('pending');
   const [pendingApprovals, setPendingApprovals] = useState<ApprovalEvent[]>([]);
   const [approvedEvents, setApprovedEvents] = useState<ApprovalEvent[]>([]);
   const [approvalsLoading, setApprovalsLoading] = useState(false);
@@ -70,6 +80,11 @@ const ManagerDashboard = () => {
   const [startTime, setStartTime] = useState('09:00');
   const [endTime, setEndTime] = useState('17:00');
 
+
+  // States for Fest Analytics
+  const [festAnalytics, setFestAnalytics] = useState<FestAnalyticsData | null>(null);
+  const [analyticsLoading, setAnalyticsLoading] = useState(false);
+  
   const fetchEvents = async () => {
     try {
       setFetching(true);
@@ -114,12 +129,25 @@ const ManagerDashboard = () => {
     }
   };
 
+  const fetchFestAnalytics = async () => {
+    try {
+      setAnalyticsLoading(true);
+      const { data } = await axios.get('/api/events/fest-analytics', { withCredentials: true });
+      setFestAnalytics(data);
+    } catch (error) {
+      console.error('Error fetching fest analytics:', error);
+    } finally {
+      setAnalyticsLoading(false);
+    }
+  };
+
   useEffect(() => {
     if (authLoading) return;
     if (role !== 'Fest Organizing Body') return;
 
     if (approvalTab === 'pending') fetchPendingApprovals();
     if (approvalTab === 'approved') fetchApprovedEventsForOrganizingBody();
+    if (approvalTab === 'analytics') fetchFestAnalytics();
   }, [approvalTab, authLoading, role]);
 
   const updateApprovalStatus = async (eventId: string, nextStatus: 'accepted' | 'rejected') => {
@@ -352,8 +380,18 @@ const ManagerDashboard = () => {
             >
               Promote Managers
             </button>
+            {/*Fest Analytics Button */}
+            <button
+              onClick={() => setApprovalTab('analytics')}
+              className={`px-5 py-2.5 rounded-xl font-medium transition-all cursor-pointer ${
+                approvalTab === 'analytics'
+                  ? 'bg-dark-accent text-white'
+                  : 'bg-white/5 hover:bg-white/10 text-dark-muted hover:text-white'
+              }`}
+            >
+              Fest Analytics
+            </button>
           </div>
-
           {approvalTab === 'create' ? (
             <div className="max-w-3xl mx-auto">
               <div className="glass-card p-8 rounded-3xl border border-white/5 shadow-xl">
@@ -546,6 +584,46 @@ const ManagerDashboard = () => {
                 </form>
               </div>
             </div>
+          ) : approvalTab === 'analytics' ? (
+            <div className="max-w-5xl mx-auto space-y-6">
+              {analyticsLoading || !festAnalytics ? (
+                <div className="flex justify-center items-center h-64">
+                  <Loader2 size={32} className="animate-spin text-dark-accent" />
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  {/* Left Column: Total Unique Interested */}
+                  <div className="glass-card p-8 rounded-3xl border border-white/5 shadow-xl flex flex-col justify-center items-center text-center">
+                    <h2 className="text-dark-muted text-sm font-semibold uppercase tracking-widest mb-2">Total Unique Interested</h2>
+                    <p className="text-7xl font-bold bg-clip-text text-transparent bg-gradient-to-br from-purple-400 to-dark-accent">
+                      {festAnalytics.totalUniqueInterested}
+                    </p>
+                    <p className="text-xs text-dark-muted mt-4">Across all active events</p>
+                  </div>
+
+                  {/* Right Column: Leaderboard */}
+                  <div className="md:col-span-2 glass-card p-8 rounded-3xl border border-white/5 shadow-xl">
+                    <h2 className="text-xl font-bold text-white mb-6">Top Performing Events</h2>
+                    <div className="space-y-4">
+                      {festAnalytics.topEvents.map((event, index) => (
+                        <div key={index} className="flex items-center justify-between p-4 rounded-xl bg-white/5 border border-white/5 hover:border-dark-accent/30 transition-colors">
+                          <div className="flex items-center gap-4">
+                            <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm ${index === 0 ? 'bg-yellow-500/20 text-yellow-400' : index === 1 ? 'bg-gray-300/20 text-gray-300' : index === 2 ? 'bg-amber-700/20 text-amber-500' : 'bg-dark-accent/20 text-white'}`}>
+                              #{index + 1}
+                            </div>
+                            <h3 className="text-white font-medium">{event.title}</h3>
+                          </div>
+                          <div className="bg-dark-accent/20 px-3 py-1 rounded-lg border border-dark-accent/30">
+                            <span className="text-white font-bold">{event.interestedCount}</span>
+                            <span className="text-dark-muted text-xs ml-1">interested</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
           ) : approvalsLoading ? (
             <div className="flex justify-center items-center h-64">
               <Loader2 size={32} className="animate-spin text-dark-accent" />
@@ -642,6 +720,7 @@ const ManagerDashboard = () => {
                       endTime={formatTime(event.endTime)}
                       variant={event.image ? 'featured' : 'list'}
                       showInterestedButton={false}
+                      showAnalyticsButton={true}
                     />
                   </motion.div>
                 ))}
