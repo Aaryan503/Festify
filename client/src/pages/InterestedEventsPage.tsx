@@ -1,9 +1,8 @@
-import { LogOut, Mail, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
-import { motion } from 'framer-motion';
-import { useAuth } from '../context/AuthContext';
-import { useNavigate } from 'react-router-dom';
 import { useCallback, useEffect, useState } from 'react';
 import axios from 'axios';
+import { ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 import EventCard from '../components/EventCard';
 
 interface Event {
@@ -30,10 +29,7 @@ interface PaginationInfo {
   hasPrevPage: boolean;
 }
 
-
-
-const ProfilePage = () => {
-  const { user, logout } = useAuth();
+const InterestedEventsPage = () => {
   const navigate = useNavigate();
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(false);
@@ -68,65 +64,24 @@ const ProfilePage = () => {
   const formatTime = (dateString: string) =>
     new Date(dateString).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
 
-  const handleLogout = async () => {
-    await logout();
-    navigate('/');
-  };
-
   return (
-    <div className="p-5 lg:p-8">
-      {/* Profile card */}
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="glass rounded-2xl p-6 mb-8"
-      >
-        <div className="flex items-center gap-4 mb-6">
-          {user?.avatar ? (
-            <img
-              src={user.avatar}
-              alt={user.name}
-              className="w-16 h-16 rounded-full border-2 border-dark-accent/40 object-cover"
-              referrerPolicy="no-referrer"
-            />
-          ) : (
-            <div className="w-16 h-16 rounded-full bg-gradient-to-br from-dark-accent to-purple-800 flex items-center justify-center text-xl font-bold">
-              {user?.name?.charAt(0) || 'U'}
-            </div>
-          )}
-          <div className="flex-1 min-w-0">
-            <h2 className="text-xl font-bold truncate">{user?.name || 'User'}</h2>
-            <p className="text-dark-muted text-sm flex items-center gap-1.5 truncate">
-              <Mail size={14} className="shrink-0" />
-              {user?.email || 'email@example.com'}
-            </p>
-          </div>
-        </div>
+    <div className="p-5 lg:p-8 relative">
+      <div className="flex justify-between items-start mb-6">
+        <h1 className="text-2xl font-bold tracking-tight">Interested Events</h1>
+      </div>
 
-        <button
-          onClick={handleLogout}
-          className="w-full glass rounded-xl py-3 px-4 flex items-center justify-center gap-2 text-red-400 hover:bg-red-500/10 transition-colors cursor-pointer text-sm font-medium"
-        >
-          <LogOut size={16} />
-          Sign Out
-        </button>
-      </motion.div>
-
-      {/* Interested events */}
-      <h3 className="text-base font-bold mb-4">Your Interested Events</h3>
-      
       {loading ? (
-        <div className="flex justify-center items-center py-10">
+        <div className="flex justify-center items-center py-20">
           <Loader2 className="animate-spin text-dark-accent" size={32} />
         </div>
       ) : events.length === 0 ? (
-        <div className="text-center py-10 glass rounded-2xl">
-          <p className="text-dark-muted text-sm">No interested events yet</p>
-          <p className="text-dark-muted text-xs mt-1">Mark events as interested from the Events tab</p>
+        <div className="text-center py-20">
+          <p className="text-dark-muted text-lg">No interested events yet</p>
+          <p className="text-dark-muted text-sm mt-2">Mark events as interested from the Events tab</p>
         </div>
       ) : (
         <>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6 relative z-10">
             {events.map((event, i) => (
               <motion.div
                 key={event._id}
@@ -154,7 +109,7 @@ const ProfilePage = () => {
           </div>
 
           {pagination && pagination.totalPages > 1 && (
-            <div className="flex items-center justify-center gap-4 mt-8 mb-8">
+            <div className="flex items-center justify-center gap-4 mt-8">
               <button
                 onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
                 disabled={!pagination.hasPrevPage}
@@ -194,4 +149,4 @@ const ProfilePage = () => {
   );
 };
 
-export default ProfilePage;
+export default InterestedEventsPage;

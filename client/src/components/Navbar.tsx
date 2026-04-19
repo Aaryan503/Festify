@@ -79,7 +79,9 @@ const Navbar = () => {
                 }`}
               >
                 <Flag size={20} strokeWidth={pathname === '/manager' ? 2.5 : 1.8} />
-                <span className="text-sm font-medium">Manager Dashboard</span>
+                <span className="text-sm font-medium">
+                  {user?.role === 'Fest Organizing Body' ? 'FOB Dashboard' : 'Manager Dashboard'}
+                </span>
               </Link>
           )}
         </nav>
