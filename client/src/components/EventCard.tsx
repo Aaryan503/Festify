@@ -74,7 +74,7 @@ const EventCard = ({
         e.stopPropagation();
         onViewChat?.();
       }}
-      className="mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-colors bg-blue-500/20 text-blue-300 border border-blue-500/30 hover:bg-blue-500/30"
+      className="flex-1 min-w-[100px] justify-center inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold cursor-pointer transition-colors bg-blue-500/20 text-blue-300 border border-blue-500/30 hover:bg-blue-500/30"
     >
       <MessageCircle size={13} />
       View Chat
@@ -83,8 +83,8 @@ const EventCard = ({
 
   if (variant === 'featured' && image) {
     return (
-      <div className="glass rounded-2xl overflow-hidden group cursor-pointer hover:border-dark-accent/30 hover:shadow-lg hover:shadow-black/25 transition-all duration-300">
-        <div className="relative aspect-video overflow-hidden">
+      <div className="glass h-full flex flex-col rounded-2xl overflow-hidden group cursor-pointer hover:border-dark-accent/30 hover:shadow-lg hover:shadow-black/25 transition-all duration-300">
+        <div className="relative aspect-video overflow-hidden shrink-0">
           <img
             src={image}
             alt={title}
@@ -92,7 +92,7 @@ const EventCard = ({
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
         </div>
-        <div className="p-4">
+        <div className="p-4 flex flex-col flex-grow">
           <h3 className="font-bold text-white mb-1">{title}</h3>
           {description && (
             <p className="text-dark-muted text-xs mb-2 line-clamp-2">{description}</p>
@@ -105,68 +105,76 @@ const EventCard = ({
             <MapPin size={12} />
             {location || 'TBD'}
           </p>
-          {showInterestedButton && user && (
+          <div className="mt-auto pt-4 flex flex-wrap gap-2">
+            {showInterestedButton && user && (
+              <button
+                onClick={handleInterestToggle}
+                disabled={isLoading}
+                className={`flex-1 min-w-[120px] justify-center inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold cursor-pointer transition-colors ${
+                  isInterested
+                    ? 'bg-green-500/20 text-green-300 border border-green-500/40'
+                    : 'bg-gray-500/20 text-gray-300 border border-gray-500/30 hover:bg-gray-500/30'
+                } ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
+              >
+                <Heart size={13} className={isInterested ? 'fill-green-300' : ''} />
+                {isLoading ? '...' : 'Interested'}
+              </button>
+            )}
+            {chatButton}
             <button
-              onClick={handleInterestToggle}
-              disabled={isLoading}
-              className={`mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-colors ${
-                isInterested
-                  ? 'bg-green-500/20 text-green-300 border border-green-500/40'
-                  : 'bg-gray-500/20 text-gray-300 border border-gray-500/30 hover:bg-gray-500/30'
-              } ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
+              onClick={(e) => {
+                e.stopPropagation();
+                navigate(`/directions/${location}`);
+              }}
+              className="flex-1 min-w-[100px] justify-center inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold cursor-pointer transition-colors bg-purple-500/20 text-purple-300 border border-purple-500/30 hover:bg-purple-500/30"
             >
-              <Heart size={13} className={isInterested ? 'fill-green-300' : ''} />
-              {isLoading ? '...' : (isInterested ? 'Interested' : 'Mark as Interested')}
+              <Navigation size={13} />
+              Directions
             </button>
-          )}
-          {chatButton}
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              navigate(`/directions/${location}`);
-            }}
-            className="mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-colors bg-purple-500/20 text-purple-300 border border-purple-500/30 hover:bg-purple-500/30"
-          >
-            <Navigation size={13} />
-            Directions
-          </button>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="glass rounded-2xl p-4 flex justify-between items-center cursor-pointer hover:border-dark-accent/30 hover:shadow-lg hover:shadow-black/20 transition-all duration-300">
+    <div className="glass h-full rounded-2xl p-4 flex flex-col justify-between cursor-pointer hover:border-dark-accent/30 hover:shadow-lg hover:shadow-black/20 transition-all duration-300">
       <div className="flex items-center gap-3">
         <div className="w-10 h-10 rounded-full bg-gradient-to-br from-dark-accent to-purple-800 flex items-center justify-center text-white font-bold text-sm shrink-0">
           {title.charAt(0)}
         </div>
         <div className="flex-1">
-          <h3 className="font-semibold text-sm leading-tight">{title}</h3>
+          <h3 className="font-semibold text-sm leading-tight line-clamp-2">{title}</h3>
           <p className="text-dark-muted text-xs">{organizer}</p>
+          <div className="flex items-center gap-1 mt-1">
+            <p className="font-bold text-xs uppercase">{date}</p>
+            <span className="text-dark-muted text-[10px]">•</span>
+            <p className="text-dark-muted text-[10px]">{time}</p>
+            {endTime && (
+              <>
+                <span className="text-dark-muted text-[10px]">-</span>
+                <p className="text-dark-muted text-[10px]">{endTime}</p>
+              </>
+            )}
+          </div>
           {description && (
-            <p className="text-dark-muted text-xs mt-1 line-clamp-1">{description}</p>
+            <p className="text-dark-muted text-xs mt-2 line-clamp-2">{description}</p>
           )}
         </div>
       </div>
-      <div className="text-right">
-        <p className="font-bold text-xs uppercase">{date}</p>
-        <p className="text-dark-muted text-[10px]">{time}</p>
-        {endTime && (
-          <p className="text-dark-muted text-[10px]">End: {endTime}</p>
-        )}
+      <div className="mt-4 pt-3 border-t border-white/5 flex flex-wrap gap-2">
         {showInterestedButton && user && (
           <button
             onClick={handleInterestToggle}
             disabled={isLoading}
-            className={`mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-colors ${
+            className={`flex-1 min-w-[120px] justify-center inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold cursor-pointer transition-colors ${
               isInterested
                 ? 'bg-green-500/20 text-green-300 border border-green-500/40'
                 : 'bg-gray-500/20 text-gray-300 border border-gray-500/30 hover:bg-gray-500/30'
             } ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
           >
             <Heart size={13} className={isInterested ? 'fill-green-300' : ''} />
-            {isLoading ? '...' : (isInterested ? 'Interested' : 'Mark as Interested')}
+            {isLoading ? '...' : 'Interested'}
           </button>
         )}
         {chatButton}
@@ -175,7 +183,7 @@ const EventCard = ({
             e.stopPropagation();
             navigate(`/directions/${location}`);
           }}
-          className="mt-2 ml-2 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-colors bg-purple-500/20 text-purple-300 border border-purple-500/30 hover:bg-purple-500/30"
+          className="flex-1 min-w-[100px] justify-center inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold cursor-pointer transition-colors bg-purple-500/20 text-purple-300 border border-purple-500/30 hover:bg-purple-500/30"
         >
           <Navigation size={13} />
           Directions
