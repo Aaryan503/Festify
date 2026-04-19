@@ -260,7 +260,7 @@ export default function EventAnalyticsPage() {
                   <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
                   <XAxis dataKey="date" tickFormatter={formatDateLabel} stroke="#8888A0" fontSize={11} tickLine={false} axisLine={false} />
                   <YAxis stroke="#8888A0" fontSize={11} tickLine={false} axisLine={false} allowDecimals={false} />
-                  <Tooltip {...tooltipStyle} labelFormatter={(label: string | number) => formatDateLabel(String(label))} />
+                  <Tooltip {...tooltipStyle} labelFormatter={(label: unknown) => formatDateLabel(String(label))} />
                   <Area type="monotone" dataKey="cumulative" stroke={ACCENT} fill="url(#interestGrad)" strokeWidth={2} name="Total Interested" dot={false} />
                   <Area type="monotone" dataKey="count" stroke={ACCENT_LIGHT} fill="none" strokeWidth={1.5} strokeDasharray="4 4" name="New per Day" dot={false} />
                 </AreaChart>
@@ -280,7 +280,7 @@ export default function EventAnalyticsPage() {
                   <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
                   <XAxis dataKey="date" tickFormatter={formatDateLabel} stroke="#8888A0" fontSize={11} tickLine={false} axisLine={false} />
                   <YAxis stroke="#8888A0" fontSize={11} tickLine={false} axisLine={false} allowDecimals={false} />
-                  <Tooltip {...tooltipStyle} labelFormatter={(label: string | number) => formatDateLabel(String(label))} />
+                  <Tooltip {...tooltipStyle} labelFormatter={(label: unknown) => formatDateLabel(String(label))} />
                   <Bar dataKey="count" fill="#3B82F6" radius={[4, 4, 0, 0]} name="Messages" barSize={24} />
                 </BarChart>
               </ResponsiveContainer>
@@ -297,7 +297,7 @@ export default function EventAnalyticsPage() {
                 <YAxis stroke="#8888A0" fontSize={11} tickLine={false} axisLine={false} allowDecimals={false} />
                 <Tooltip
                   {...tooltipStyle}
-                  labelFormatter={(h: string | number) => formatHourLabel(Number(h))}
+                  labelFormatter={(h: unknown) => formatHourLabel(Number(h))}
                 />
                 <Bar dataKey="count" fill="#8B5CF6" radius={[3, 3, 0, 0]} name="Messages" barSize={16} />
               </BarChart>
@@ -315,7 +315,8 @@ export default function EventAnalyticsPage() {
                   <XAxis type="number" stroke="#8888A0" fontSize={11} tickLine={false} axisLine={false} allowDecimals={false} />
                   <YAxis
                     type="category" dataKey="title" stroke="#8888A0" fontSize={11} tickLine={false} axisLine={false} width={120}
-                    tick={({ x, y, payload }: { x: number; y: number; payload: { value: string } }) => {
+                    tick={(props: unknown) => {
+                      const { x, y, payload } = props as { x: number; y: number; payload: { value: string } };
                       const item = data.categoryComparison.find(c => c.title === payload.value);
                       return (
                         <text x={x} y={y} dy={4} textAnchor="end" fill={item?.isCurrentEvent ? '#6C5DD3' : '#8888A0'} fontSize={11} fontWeight={item?.isCurrentEvent ? 700 : 400}>
@@ -341,7 +342,8 @@ export default function EventAnalyticsPage() {
                   <XAxis type="number" stroke="#8888A0" fontSize={11} tickLine={false} axisLine={false} allowDecimals={false} />
                   <YAxis
                     type="category" dataKey="title" stroke="#8888A0" fontSize={11} tickLine={false} axisLine={false} width={120}
-                    tick={({ x, y, payload }: { x: number; y: number; payload: { value: string } }) => {
+                    tick={(props: unknown) => {
+                      const { x, y, payload } = props as { x: number; y: number; payload: { value: string } };
                       const item = data.venueComparison.find(c => c.title === payload.value);
                       return (
                         <text x={x} y={y} dy={4} textAnchor="end" fill={item?.isCurrentEvent ? '#6C5DD3' : '#8888A0'} fontSize={11} fontWeight={item?.isCurrentEvent ? 700 : 400}>
