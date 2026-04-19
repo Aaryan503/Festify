@@ -1,7 +1,10 @@
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
+import cookieParser from "cookie-parser";
+
 dotenv.config();
+
 import passport from "./config/passport";
 import authRoutes from "./routes/auth";
 import userRoutes from "./routes/user.routes";
@@ -9,18 +12,16 @@ import eventRoutes from "./routes/event.routes";
 import chatRoutes from "./routes/chat.routes";
 import messageRoutes from "./routes/message.routes";
 import connectDB from "./config/db";
-import cookieParser from "cookie-parser";
-
-connectDB();
 
 const app = express();
 
+connectDB();
+
 app.use(express.json());
 app.use(cookieParser());
-
 app.use(
   cors({
-    origin: "http://localhost:5173",
+    origin: process.env.CLIENT_URL || "http://localhost:5173",
     credentials: true,
   })
 );
@@ -32,6 +33,12 @@ app.use("/api/events", eventRoutes);
 app.use("/api/chats", chatRoutes);
 app.use("/api/messages", messageRoutes);
 
-app.listen(5000, () => {
-  console.log("Server running on port 5000");
+app.get("/", (_, res) => {
+  res.send("API is running 🚀");
+});
+
+const PORT = process.env.PORT || 5000;
+
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
 });
