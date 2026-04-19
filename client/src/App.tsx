@@ -12,6 +12,7 @@ import SchedulePage from './pages/SchedulePage';
 import EventAnalyticsPage from './pages/EventAnalyticsPage';
 import EventChatPage from './pages/EventChatPage';
 import MessagePage from './pages/MessagePage';
+import DirectionsPage from './pages/DirectionsPage';
 
 function App() {
   return (
@@ -27,6 +28,7 @@ function App() {
             <Route path="/events" element={<ProtectedRoute><EventsPage /></ProtectedRoute>} />
             <Route path="/interested-events" element={<ProtectedRoute><InterestedEventsPage /></ProtectedRoute>} />
             <Route path="/events/:eventId/chat" element={<ProtectedRoute><EventChatPage /></ProtectedRoute>} />
+            <Route path="/directions/:venueId?" element={<ProtectedRoute><DirectionsPage /></ProtectedRoute>} />
             <Route path="/schedule" element={<ProtectedRoute><SchedulePage /></ProtectedRoute>} />
             <Route path="/message-page" element={<ProtectedRoute><MessagePage /></ProtectedRoute>} />
             <Route path="*" element={<Navigate to="/" replace />} />

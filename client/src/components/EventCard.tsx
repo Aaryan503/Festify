@@ -1,7 +1,8 @@
-import { MapPin, Heart, MessageCircle } from 'lucide-react';
+import { MapPin, Heart, MessageCircle, Navigation } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
+import { useNavigate } from 'react-router-dom';
 
 interface EventCardProps {
   _id: string;
@@ -41,6 +42,7 @@ const EventCard = ({
   const [isInterested, setIsInterested] = useState(initialInterestedStatus);
   const [isLoading, setIsLoading] = useState(false);
   const { user } = useAuth();
+  const navigate = useNavigate();
 
   useEffect(() => {
     setIsInterested(initialInterestedStatus);
@@ -118,6 +120,16 @@ const EventCard = ({
             </button>
           )}
           {chatButton}
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              navigate(`/directions/${location}`);
+            }}
+            className="mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-colors bg-purple-500/20 text-purple-300 border border-purple-500/30 hover:bg-purple-500/30"
+          >
+            <Navigation size={13} />
+            Directions
+          </button>
         </div>
       </div>
     );
@@ -158,6 +170,16 @@ const EventCard = ({
           </button>
         )}
         {chatButton}
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            navigate(`/directions/${location}`);
+          }}
+          className="mt-2 ml-2 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-colors bg-purple-500/20 text-purple-300 border border-purple-500/30 hover:bg-purple-500/30"
+        >
+          <Navigation size={13} />
+          Directions
+        </button>
       </div>
     </div>
   );
