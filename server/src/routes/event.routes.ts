@@ -3,6 +3,8 @@ import { isAuthenticated } from "../middleware/auth.middleware";
 import Event from "../models/event.model";
 import InterestedUsers from "../models/interestedUsers.model";
 import { UserRole } from "../models/userRole";
+import { generateEventAnalytics } from "../services/event.service";
+
 
 const router = express.Router();
 
@@ -246,6 +248,23 @@ router.get("/filter", async (req, res) => {
   } catch (error) {
     console.error("Error filtering events:", error);
     res.status(500).json({ message: "Server error" });
+  }
+});
+
+router.get("/:eventId/analytics", async (req, res) => {
+  try {
+    // Extract the dynamic ID from the URL (e.g., the "123" in /events/123/analytics)
+    const { eventId } = req.params;
+    
+    // Call your new service
+    const analyticsData = await generateEventAnalytics(eventId);
+    
+    // Send the JSON "contract" back
+    res.status(200).json(analyticsData);
+    
+  } catch (error: any) {
+    console.error("Failed to fetch analytics:", error);
+    res.status(500).json({ message: "Failed to generate analytics data" });
   }
 });
 
