@@ -6,12 +6,24 @@ export interface AuthRequest extends Request {
   userId?: string;
 }
 
+/**
+ * Extract the JWT from the Authorization header (preferred)
+ * or fall back to the cookie (local dev convenience).
+ */
+function extractToken(req: Request): string | undefined {
+  const authHeader = req.headers.authorization;
+  if (authHeader?.startsWith("Bearer ")) {
+    return authHeader.slice(7);
+  }
+  return req.cookies?.token;
+}
+
 export const protect = (
   req: AuthRequest,
   res: Response,
   next: NextFunction
 ) => {
-  const token = req.cookies.token;
+  const token = extractToken(req);
 
   if (!token) {
     return res.status(401).json({ message: "Not authenticated" });
@@ -35,7 +47,7 @@ export const isAuthenticated = async (
   res: Response,
   next: NextFunction
 ) => {
-  const token = req.cookies.token;
+  const token = extractToken(req);
 
   if (!token) {
     return res.status(401).json({ message: "Not authenticated" });

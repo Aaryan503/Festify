@@ -5,18 +5,6 @@ import { getClientUrl } from "../config/urls";
 
 const router = Router();
 
-function cookieOptions() {
-  const clientUrl = getClientUrl();
-  const https = clientUrl.startsWith("https:");
-  return {
-    httpOnly: true,
-    path: "/" as const,
-    maxAge: 7 * 24 * 60 * 60 * 1000,
-    secure: https,
-    sameSite: (https ? "none" : "lax") as "none" | "lax",
-  };
-}
-
 router.get(
   "/google",
   passport.authenticate("google", { scope: ["profile", "email"] })
@@ -30,20 +18,16 @@ router.get(
 
     const token = signToken(user._id.toString());
 
-    res.cookie("token", token, cookieOptions());
-
-    res.redirect(`${getClientUrl()}/home`);
+    // Redirect to the client-side callback page with the token in the URL.
+    // We can no longer use cookies because Railway's .up.railway.app domain
+    // is on the Public Suffix List and browsers refuse cross-site cookies.
+    res.redirect(`${getClientUrl()}/auth/callback?token=${token}`);
   }
 );
 
 router.get("/logout", (_req, res) => {
-  const opts = cookieOptions();
-  res.clearCookie("token", {
-    httpOnly: opts.httpOnly,
-    secure: opts.secure,
-    sameSite: opts.sameSite,
-    path: opts.path,
-  });
+  // Cookie clearing kept for backward compat with any lingering cookies
+  res.clearCookie("token", { httpOnly: true, path: "/" });
   res.json({ message: "Logged out" });
 });
 

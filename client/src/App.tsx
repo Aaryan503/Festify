@@ -3,6 +3,7 @@ import { AuthProvider } from './context/AuthContext';
 import Layout from './components/Layout';
 import ProtectedRoute from './components/ProtectedRoute';
 import LoginPage from './pages/LoginPage';
+import AuthCallbackPage from './pages/AuthCallbackPage';
 import HomePage from './pages/HomePage';
 import ProfilePage from './pages/ProfilePage';
 import ManagerDashboard from './pages/ManagerDashboard';
@@ -20,6 +21,7 @@ function App() {
         <Layout>
           <Routes>
             <Route path="/" element={<LoginPage />} />
+            <Route path="/auth/callback" element={<AuthCallbackPage />} />
             <Route path="/home" element={<ProtectedRoute><HomePage /></ProtectedRoute>} />
             <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
             <Route path="/manager" element={<ProtectedRoute><ManagerDashboard /></ProtectedRoute>} />
