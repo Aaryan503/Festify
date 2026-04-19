@@ -95,7 +95,7 @@ const EventCard = ({
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
         </div>
-        <div className="p-4">
+        <div className="p-4 flex flex-col flex-grow">
           <div className="flex justify-between items-start gap-2 mb-1">
             <h3 className="font-bold text-white">{title}</h3>
             {showAnalyticsButton && (
@@ -108,8 +108,6 @@ const EventCard = ({
               </Link>
             )}
           </div>
-        <div className="p-4 flex flex-col flex-grow">
-          <h3 className="font-bold text-white mb-1">{title}</h3>
           {description && (
             <p className="text-dark-muted text-xs mb-2 line-clamp-2">{description}</p>
           )}
@@ -166,8 +164,19 @@ const EventCard = ({
           );
         })()}
         <div className="flex-1">
-          <h3 className="font-semibold text-sm leading-tight line-clamp-2">{title}</h3>
-          <p className="text-dark-muted text-xs">{organizer}</p>
+          <div className="flex justify-between items-start gap-2">
+            <h3 className="font-semibold text-sm leading-tight line-clamp-2">{title}</h3>
+            {showAnalyticsButton && (
+              <Link
+                to={`/events/${_id}/analytics`}
+                onClick={(e) => e.stopPropagation()} 
+                className="bg-dark-accent hover:bg-dark-accent-light text-white text-[10px] uppercase tracking-wider font-bold py-1 px-2 rounded-md transition-colors shrink-0 border border-white/10"
+              >
+                Analytics
+              </Link>
+            )}
+          </div>
+          <p className="text-dark-muted text-xs mt-1">{organizer}</p>
           <div className="flex items-center gap-1 mt-1">
             <p className="font-bold text-xs uppercase">{date}</p>
             <span className="text-dark-muted text-[10px]">•</span>
