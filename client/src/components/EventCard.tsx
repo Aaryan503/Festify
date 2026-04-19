@@ -140,9 +140,15 @@ const EventCard = ({
   return (
     <div className="glass h-full rounded-2xl p-4 flex flex-col justify-between cursor-pointer hover:border-dark-accent/30 hover:shadow-lg hover:shadow-black/20 transition-all duration-300">
       <div className="flex items-center gap-3">
-        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-dark-accent to-purple-800 flex items-center justify-center text-white font-bold text-sm shrink-0">
-          {title.charAt(0)}
-        </div>
+        {(() => {
+          const firstChar = Array.from(title)[0] || '';
+          const isEmoji = /\p{Extended_Pictographic}/u.test(firstChar);
+          return (
+            <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white shrink-0 ${isEmoji ? 'bg-white/5 text-xl' : 'bg-gradient-to-br from-dark-accent to-purple-800 text-sm font-bold'}`}>
+              {firstChar}
+            </div>
+          );
+        })()}
         <div className="flex-1">
           <h3 className="font-semibold text-sm leading-tight line-clamp-2">{title}</h3>
           <p className="text-dark-muted text-xs">{organizer}</p>
