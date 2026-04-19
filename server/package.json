@@ -4,7 +4,6 @@
     "dev": "tsx watch --env-file=.env src/index.ts",
     "build": "tsc",
     "start": "node dist/index.js",
-    "postinstall": "npm install nodemailer @types/nodemailer",
     "seed": "tsx src/scripts/seedMockData.ts"
   },
   "keywords": [],

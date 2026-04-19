@@ -32,7 +32,7 @@ const getOrCreateChat = async (eventId: string) => {
 
 router.get("/events/:eventId", isAuthenticated, async (req, res) => {
   try {
-    const { eventId } = req.params;
+    const eventId = req.params.eventId as string;
     const userId = req.user?._id.toString();
 
     if (!userId) {
@@ -64,7 +64,7 @@ router.get("/events/:eventId", isAuthenticated, async (req, res) => {
 
 router.get("/events/:eventId/messages", isAuthenticated, async (req, res) => {
   try {
-    const { eventId } = req.params;
+    const eventId = req.params.eventId as string;
     const { before, limit = "50" } = req.query;
     const userId = req.user?._id.toString();
 
@@ -107,7 +107,7 @@ router.get("/events/:eventId/messages", isAuthenticated, async (req, res) => {
 
 router.post("/events/:eventId/messages", isAuthenticated, async (req, res) => {
   try {
-    const { eventId } = req.params;
+    const eventId = req.params.eventId as string;
     const { content } = req.body as { content?: string };
     const userId = req.user?._id.toString();
 
@@ -148,7 +148,8 @@ router.post("/events/:eventId/messages", isAuthenticated, async (req, res) => {
 
 router.delete("/events/:eventId/messages/:messageId", isAuthenticated, async (req, res) => {
   try {
-    const { eventId, messageId } = req.params;
+    const eventId = req.params.eventId as string;
+    const messageId = req.params.messageId as string;
     const userId = req.user?._id.toString();
 
     if (!userId) {
@@ -188,7 +189,7 @@ router.delete("/events/:eventId/messages/:messageId", isAuthenticated, async (re
 
 router.get("/events/:eventId/resources", isAuthenticated, async (req, res) => {
   try {
-    const { eventId } = req.params;
+    const eventId = req.params.eventId as string;
     const userId = req.user?._id.toString();
 
     if (!userId) {
@@ -218,7 +219,7 @@ router.get("/events/:eventId/resources", isAuthenticated, async (req, res) => {
 
 router.post("/events/:eventId/resources", isAuthenticated, async (req, res) => {
   try {
-    const { eventId } = req.params;
+    const eventId = req.params.eventId as string;
     const { title, url } = req.body as { title?: string; url?: string };
     const userId = req.user?._id.toString();
 
