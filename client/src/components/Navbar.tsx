@@ -1,11 +1,10 @@
 import { Link, useLocation } from 'react-router-dom';
-import { Home, Flag, Calendar, User, Heart } from 'lucide-react';
+import { Home, Flag, Calendar, User } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 const NAV_ITEMS = [
   { path: '/home', icon: Home, label: 'Home' },
   { path: '/events', icon: Flag, label: 'Events' },
-  { path: '/interested-events', icon: Heart, label: 'Interested Events' },
   { path: '/schedule', icon: Calendar, label: 'Schedule' },
   { path: '/profile', icon: User, label: 'Profile' },
 ] as const;
