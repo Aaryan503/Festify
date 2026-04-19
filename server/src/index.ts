@@ -6,6 +6,7 @@ import cookieParser from "cookie-parser";
 dotenv.config();
 
 import passport from "./config/passport";
+import { DEFAULT_CLIENT_URL } from "./config/urls";
 import authRoutes from "./routes/auth";
 import userRoutes from "./routes/user.routes";
 import eventRoutes from "./routes/event.routes";
@@ -21,7 +22,7 @@ app.use(express.json());
 app.use(cookieParser());
 app.use(
   cors({
-    origin: process.env.CLIENT_URL || "http://localhost:5173",
+    origin: process.env.CLIENT_URL || DEFAULT_CLIENT_URL,
     credentials: true,
   })
 );
