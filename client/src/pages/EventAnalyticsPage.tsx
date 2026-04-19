@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
+import type { LucideIcon } from 'lucide-react';
 import { useParams, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import axios from 'axios';
 import { ArrowLeft, Users, MessageCircle, TrendingUp, Calendar, MapPin, Tag, User, BarChart3 } from 'lucide-react';
 import {
   ResponsiveContainer,
@@ -10,6 +12,8 @@ import {
   XAxis, YAxis, CartesianGrid, Tooltip,
   Legend
 } from 'recharts';
+
+const API = import.meta.env.VITE_API_URL;
 
 // ─── Color palettes ───
 const PIE_COLORS = ['#6C5DD3', '#8B7FE8', '#A78BFA', '#C4B5FD', '#7C3AED', '#5B21B6', '#4C1D95', '#DDD6FE'];
@@ -52,7 +56,7 @@ interface AnalyticsData {
 
 // ─── Stat card ───
 const StatCard = ({ icon: Icon, label, value, sub, color, delay }: {
-  icon: any; label: string; value: string | number; sub?: string; color: string; delay: number;
+  icon: LucideIcon; label: string; value: string | number; sub?: string; color: string; delay: number;
 }) => (
   <motion.div
     initial={{ opacity: 0, y: 20 }}
@@ -94,8 +98,16 @@ const SectionCard = ({ title, children, delay = 0, className = '' }: {
 );
 
 // Custom bar for comparison charts - highlight current event
-const ComparisonBar = (props: any) => {
-  const { x, y, width, height, payload } = props;
+interface ComparisonBarProps {
+  x?: number;
+  y?: number;
+  width?: number;
+  height?: number;
+  payload?: { isCurrentEvent?: boolean };
+}
+
+const ComparisonBar = (props: ComparisonBarProps) => {
+  const { x = 0, y = 0, width = 0, height = 0, payload } = props;
   const isCurrentEvent = payload?.isCurrentEvent;
   return (
     <rect
@@ -116,12 +128,13 @@ export default function EventAnalyticsPage() {
   useEffect(() => {
     const fetchAnalytics = async () => {
       try {
-        const response = await fetch(`http://localhost:5000/api/events/${eventId}/analytics`);
-        if (!response.ok) throw new Error('Failed to fetch analytics');
-        const jsonData = await response.json();
-        setData(jsonData);
-      } catch (err: any) {
-        setError(err.message);
+        const { data } = await axios.get<AnalyticsData>(`${API}/api/events/${eventId}/analytics`, {
+          withCredentials: true,
+        });
+        setData(data);
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : 'Failed to fetch analytics';
+        setError(message);
       } finally {
         setLoading(false);
       }
@@ -247,7 +260,7 @@ export default function EventAnalyticsPage() {
                   <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
                   <XAxis dataKey="date" tickFormatter={formatDateLabel} stroke="#8888A0" fontSize={11} tickLine={false} axisLine={false} />
                   <YAxis stroke="#8888A0" fontSize={11} tickLine={false} axisLine={false} allowDecimals={false} />
-                  <Tooltip {...tooltipStyle} labelFormatter={(label: any) => formatDateLabel(label)} />
+                  <Tooltip {...tooltipStyle} labelFormatter={(label: string | number) => formatDateLabel(String(label))} />
                   <Area type="monotone" dataKey="cumulative" stroke={ACCENT} fill="url(#interestGrad)" strokeWidth={2} name="Total Interested" dot={false} />
                   <Area type="monotone" dataKey="count" stroke={ACCENT_LIGHT} fill="none" strokeWidth={1.5} strokeDasharray="4 4" name="New per Day" dot={false} />
                 </AreaChart>
@@ -267,7 +280,7 @@ export default function EventAnalyticsPage() {
                   <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
                   <XAxis dataKey="date" tickFormatter={formatDateLabel} stroke="#8888A0" fontSize={11} tickLine={false} axisLine={false} />
                   <YAxis stroke="#8888A0" fontSize={11} tickLine={false} axisLine={false} allowDecimals={false} />
-                  <Tooltip {...tooltipStyle} labelFormatter={(label: any) => formatDateLabel(label)} />
+                  <Tooltip {...tooltipStyle} labelFormatter={(label: string | number) => formatDateLabel(String(label))} />
                   <Bar dataKey="count" fill="#3B82F6" radius={[4, 4, 0, 0]} name="Messages" barSize={24} />
                 </BarChart>
               </ResponsiveContainer>
@@ -284,7 +297,7 @@ export default function EventAnalyticsPage() {
                 <YAxis stroke="#8888A0" fontSize={11} tickLine={false} axisLine={false} allowDecimals={false} />
                 <Tooltip
                   {...tooltipStyle}
-                  labelFormatter={(h: any) => formatHourLabel(h)}
+                  labelFormatter={(h: string | number) => formatHourLabel(Number(h))}
                 />
                 <Bar dataKey="count" fill="#8B5CF6" radius={[3, 3, 0, 0]} name="Messages" barSize={16} />
               </BarChart>
@@ -302,7 +315,7 @@ export default function EventAnalyticsPage() {
                   <XAxis type="number" stroke="#8888A0" fontSize={11} tickLine={false} axisLine={false} allowDecimals={false} />
                   <YAxis
                     type="category" dataKey="title" stroke="#8888A0" fontSize={11} tickLine={false} axisLine={false} width={120}
-                    tick={({ x, y, payload }: any) => {
+                    tick={({ x, y, payload }: { x: number; y: number; payload: { value: string } }) => {
                       const item = data.categoryComparison.find(c => c.title === payload.value);
                       return (
                         <text x={x} y={y} dy={4} textAnchor="end" fill={item?.isCurrentEvent ? '#6C5DD3' : '#8888A0'} fontSize={11} fontWeight={item?.isCurrentEvent ? 700 : 400}>
@@ -328,7 +341,7 @@ export default function EventAnalyticsPage() {
                   <XAxis type="number" stroke="#8888A0" fontSize={11} tickLine={false} axisLine={false} allowDecimals={false} />
                   <YAxis
                     type="category" dataKey="title" stroke="#8888A0" fontSize={11} tickLine={false} axisLine={false} width={120}
-                    tick={({ x, y, payload }: any) => {
+                    tick={({ x, y, payload }: { x: number; y: number; payload: { value: string } }) => {
                       const item = data.venueComparison.find(c => c.title === payload.value);
                       return (
                         <text x={x} y={y} dy={4} textAnchor="end" fill={item?.isCurrentEvent ? '#6C5DD3' : '#8888A0'} fontSize={11} fontWeight={item?.isCurrentEvent ? 700 : 400}>

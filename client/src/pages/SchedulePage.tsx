@@ -6,6 +6,8 @@ import Calendar from '../components/Calendar';
 import { Clock, CalendarDays, Heart, Globe } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
+const API = import.meta.env.VITE_API_URL;
+
 interface Event {
   _id: string;
   title: string;
@@ -37,11 +39,8 @@ const SchedulePage = () => {
   useEffect(() => {
     const fetchEvents = async () => {
       try {
-        const response = await fetch('/api/events');
-        if (response.ok) {
-          const data = await response.json();
-          setAllEvents(data);
-        }
+        const { data } = await axios.get<Event[]>(`${API}/api/events`);
+        setAllEvents(data);
       } catch (error) {
         console.error('Error fetching events:', error);
       } finally {
@@ -57,7 +56,7 @@ const SchedulePage = () => {
     const fetchInterestedEvents = async () => {
       if (!user) return;
       try {
-        const response = await axios.get('/api/events/interested/my-events', {
+        const response = await axios.get(`${API}/api/events/interested/my-events`, {
           params: { limit: 100 },
           withCredentials: true,
         });

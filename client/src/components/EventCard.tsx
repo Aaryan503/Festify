@@ -5,6 +5,8 @@ import { useAuth } from '../context/AuthContext';
 import { Link } from 'react-router-dom';
 import { useNavigate } from 'react-router-dom';
 
+const API = import.meta.env.VITE_API_URL;
+
 interface EventCardProps {
   _id: string;
   title: string;
@@ -58,7 +60,7 @@ const EventCard = ({
     setIsLoading(true);
     try {
       const response = await axios.post(
-        `/api/events/${_id}/interested/toggle`,
+        `${API}/api/events/${_id}/interested/toggle`,
         {},
         { withCredentials: true }
       );

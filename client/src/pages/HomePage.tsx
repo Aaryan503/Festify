@@ -8,6 +8,8 @@ import useEmblaCarousel from 'embla-carousel-react';
 import Autoplay from 'embla-carousel-autoplay';
 import { useNavigate } from 'react-router-dom';
 
+const API = import.meta.env.VITE_API_URL;
+
 interface Event {
   _id: string;
   title: string;
@@ -41,33 +43,30 @@ const HomePage = () => {
   useEffect(() => {
     const fetchEvents = async () => {
       try {
-        const response = await fetch('/api/events');
-        if (response.ok) {
-          const data = await response.json();
-          setEvents(data);
-          
-          // Fetch interest status for each event if user is logged in
-          if (user) {
-            const statusPromises = data.map(async (event: Event) => {
-              try {
-                const statusResponse = await axios.get(`/api/events/${event._id}/interested/status`, {
-                  withCredentials: true
-                });
-                return { eventId: event._id, interested: statusResponse.data.interested };
-              } catch (error) {
-                console.error(`Error fetching interest status for event ${event._id}:`, error);
-                return { eventId: event._id, interested: false };
-              }
-            });
-            
-            const statuses = await Promise.all(statusPromises);
-            const statusMap = statuses.reduce((acc, status) => {
-              acc[status.eventId] = status.interested;
-              return acc;
-            }, {} as Record<string, boolean>);
-            
-            setInterestStatuses(statusMap);
-          }
+        const { data } = await axios.get<Event[]>(`${API}/api/events`);
+        setEvents(data);
+
+        // Fetch interest status for each event if user is logged in
+        if (user) {
+          const statusPromises = data.map(async (event: Event) => {
+            try {
+              const statusResponse = await axios.get(`${API}/api/events/${event._id}/interested/status`, {
+                withCredentials: true
+              });
+              return { eventId: event._id, interested: statusResponse.data.interested };
+            } catch (error) {
+              console.error(`Error fetching interest status for event ${event._id}:`, error);
+              return { eventId: event._id, interested: false };
+            }
+          });
+
+          const statuses = await Promise.all(statusPromises);
+          const statusMap = statuses.reduce((acc, status) => {
+            acc[status.eventId] = status.interested;
+            return acc;
+          }, {} as Record<string, boolean>);
+
+          setInterestStatuses(statusMap);
         }
       } catch (error) {
         console.error('Error fetching events:', error);
@@ -174,7 +173,7 @@ const HomePage = () => {
                                   onClick={async (e) => {
                                     e.stopPropagation();
                                     try {
-                                      const response = await axios.post(`/api/events/${event._id}/interested/toggle`, {}, { withCredentials: true });
+                                      const response = await axios.post(`${API}/api/events/${event._id}/interested/toggle`, {}, { withCredentials: true });
                                       setInterestStatuses(prev => ({ ...prev, [event._id]: response.data.interested }));
                                     } catch (error) { console.error(error); }
                                   }}

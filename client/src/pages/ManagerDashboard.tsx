@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import type { LucideIcon } from 'lucide-react';
 import axios from 'axios';
 import { Plus, Calendar, MapPin, Loader2, ArrowLeft, Clock, Edit2, Trash2, Send, Users, MessageCircle, TrendingUp, BarChart3 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -18,6 +19,9 @@ import {
   XAxis, YAxis, CartesianGrid, Tooltip,
   Legend
 } from 'recharts';
+
+const API = import.meta.env.VITE_API_URL;
+
 interface Event {
   _id: string;
   title: string;
@@ -81,7 +85,7 @@ const FEST_TOOLTIP = {
 };
 
 const FestStatCard = ({ icon: Icon, label, value, sub, color, delay }: {
-  icon: any; label: string; value: string | number; sub?: string; color: string; delay: number;
+  icon: LucideIcon; label: string; value: string | number; sub?: string; color: string; delay: number;
 }) => (
   <motion.div
     initial={{ opacity: 0, y: 20 }}
@@ -168,7 +172,7 @@ const ManagerDashboard = () => {
   const fetchEvents = async () => {
     try {
       setFetching(true);
-      const { data } = await axios.get('/api/events/my-events', { withCredentials: true });
+      const { data } = await axios.get(`${API}/api/events/my-events`, { withCredentials: true });
       setEvents(data);
     } catch (error) {
       console.error('Error fetching events:', error);
@@ -186,7 +190,7 @@ const ManagerDashboard = () => {
   const fetchPendingApprovals = async () => {
     try {
       setApprovalsLoading(true);
-      const { data } = await axios.get('/api/events/approvals/pending', { withCredentials: true });
+      const { data } = await axios.get(`${API}/api/events/approvals/pending`, { withCredentials: true });
       setPendingApprovals(data?.events || []);
     } catch (error) {
       console.error('Error fetching pending approvals:', error);
@@ -199,7 +203,7 @@ const ManagerDashboard = () => {
   const fetchApprovedEventsForOrganizingBody = async () => {
     try {
       setApprovalsLoading(true);
-      const { data } = await axios.get('/api/events', { withCredentials: true });
+      const { data } = await axios.get(`${API}/api/events`, { withCredentials: true });
       setApprovedEvents(data || []);
     } catch (error) {
       console.error('Error fetching approved events:', error);
@@ -212,7 +216,7 @@ const ManagerDashboard = () => {
   const fetchFestAnalytics = async () => {
     try {
       setAnalyticsLoading(true);
-      const { data } = await axios.get('/api/events/fest-analytics', { withCredentials: true });
+      const { data } = await axios.get(`${API}/api/events/fest-analytics`, { withCredentials: true });
       setFestAnalytics(data);
     } catch (error) {
       console.error('Error fetching fest analytics:', error);
@@ -233,7 +237,7 @@ const ManagerDashboard = () => {
   const updateApprovalStatus = async (eventId: string, nextStatus: 'accepted' | 'rejected') => {
     try {
       await axios.patch(
-        `/api/events/${eventId}/approval`,
+        `${API}/api/events/${eventId}/approval`,
         { status: nextStatus },
         { withCredentials: true }
       );
@@ -273,7 +277,7 @@ const ManagerDashboard = () => {
       }
 
       await axios.post(
-        '/api/events',
+        `${API}/api/events`,
         {
           title,
           description,
@@ -338,7 +342,7 @@ const ManagerDashboard = () => {
     if (!window.confirm('Are you sure you want to delete this event? This action cannot be undone.')) return;
     
     try {
-      await axios.delete(`/api/events/${eventId}`, { withCredentials: true });
+      await axios.delete(`${API}/api/events/${eventId}`, { withCredentials: true });
       setEvents(events.filter(e => e._id !== eventId));
     } catch (error) {
       console.error('Error deleting event:', error);
@@ -375,7 +379,7 @@ const ManagerDashboard = () => {
       }
 
       if (view === 'create') {
-        await axios.post('/api/events', {
+        await axios.post(`${API}/api/events`, {
           title,
           description,
           image,
@@ -385,7 +389,7 @@ const ManagerDashboard = () => {
           endTime: endDateTime
         }, { withCredentials: true });
       } else {
-        await axios.patch(`/api/events/${editingEventId}`, {
+        await axios.patch(`${API}/api/events/${editingEventId}`, {
           title,
           description,
           image,
@@ -611,7 +615,7 @@ const ManagerDashboard = () => {
                     setPromoteMessage(null);
                     try {
                       const { data } = await axios.post(
-                        '/api/users/promote-event-manager',
+                        `${API}/api/users/promote-event-manager`,
                         { email },
                         { withCredentials: true }
                       );
@@ -700,11 +704,14 @@ const ManagerDashboard = () => {
                             <XAxis type="number" stroke="#8888A0" fontSize={11} tickLine={false} axisLine={false} allowDecimals={false} />
                             <YAxis
                               type="category" dataKey="title" stroke="#8888A0" fontSize={11} tickLine={false} axisLine={false} width={130}
-                              tick={({ x, y, payload }: any) => (
-                                <text x={x} y={y} dy={4} textAnchor="end" fill="#8888A0" fontSize={11}>
-                                  {payload.value.length > 18 ? payload.value.slice(0, 18) + '…' : payload.value}
-                                </text>
-                              )}
+                              tick={(props: unknown) => {
+                                const { x, y, payload } = props as { x: number; y: number; payload: { value: string } };
+                                return (
+                                  <text x={x} y={y} dy={4} textAnchor="end" fill="#8888A0" fontSize={11}>
+                                    {payload.value.length > 18 ? payload.value.slice(0, 18) + '…' : payload.value}
+                                  </text>
+                                );
+                              }}
                             />
                             <Tooltip {...FEST_TOOLTIP} />
                             <Bar dataKey="interestedCount" name="Interested" fill="#6C5DD3" radius={[0, 4, 4, 0]} barSize={22} />
@@ -727,7 +734,7 @@ const ManagerDashboard = () => {
                               dataKey="count" nameKey="category"
                               stroke="none"
                             >
-                              {festAnalytics.categoryDistribution.map((_: any, index: number) => (
+                              {festAnalytics.categoryDistribution.map((_row, index) => (
                                 <Cell key={index} fill={FEST_PIE_COLORS[index % FEST_PIE_COLORS.length]} />
                               ))}
                             </Pie>
@@ -764,7 +771,8 @@ const ManagerDashboard = () => {
                             <YAxis stroke="#8888A0" fontSize={11} tickLine={false} axisLine={false} allowDecimals={false} />
                             <Tooltip
                               {...FEST_TOOLTIP}
-                              labelFormatter={(d: any) => new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                              labelFormatter={(d: unknown) =>
+                                new Date(d as string | number).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                             />
                             <Area type="monotone" dataKey="count" stroke="#6C5DD3" fill="url(#festTrendGrad)" strokeWidth={2} name="New Interests" dot={false} />
                           </AreaChart>
@@ -786,7 +794,7 @@ const ManagerDashboard = () => {
                               dataKey="value"
                               stroke="none"
                             >
-                              {Object.entries(festAnalytics.overallBatchBreakdown).map((_: any, index: number) => (
+                              {Object.entries(festAnalytics.overallBatchBreakdown).map((_entry, index) => (
                                 <Cell key={index} fill={FEST_PIE_COLORS[index % FEST_PIE_COLORS.length]} />
                               ))}
                             </Pie>
@@ -817,7 +825,8 @@ const ManagerDashboard = () => {
                             <YAxis stroke="#8888A0" fontSize={11} tickLine={false} axisLine={false} allowDecimals={false} />
                             <Tooltip
                               {...FEST_TOOLTIP}
-                              labelFormatter={(d: any) => new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                              labelFormatter={(d: unknown) =>
+                                new Date(d as string | number).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                             />
                             <Bar dataKey="count" fill="#3B82F6" radius={[4, 4, 0, 0]} name="Events" barSize={24} />
                           </BarChart>
@@ -835,11 +844,14 @@ const ManagerDashboard = () => {
                             <XAxis type="number" stroke="#8888A0" fontSize={11} tickLine={false} axisLine={false} allowDecimals={false} />
                             <YAxis
                               type="category" dataKey="venue" stroke="#8888A0" fontSize={11} tickLine={false} axisLine={false} width={120}
-                              tick={({ x, y, payload }: any) => (
-                                <text x={x} y={y} dy={4} textAnchor="end" fill="#8888A0" fontSize={11}>
-                                  {payload.value.length > 16 ? payload.value.slice(0, 16) + '…' : payload.value}
-                                </text>
-                              )}
+                              tick={(props: unknown) => {
+                                const { x, y, payload } = props as { x: number; y: number; payload: { value: string } };
+                                return (
+                                  <text x={x} y={y} dy={4} textAnchor="end" fill="#8888A0" fontSize={11}>
+                                    {payload.value.length > 16 ? payload.value.slice(0, 16) + '…' : payload.value}
+                                  </text>
+                                );
+                              }}
                             />
                             <Tooltip {...FEST_TOOLTIP} />
                             <Bar dataKey="interestedCount" name="Interested" fill="#10B981" radius={[0, 4, 4, 0]} barSize={20} />
@@ -1161,6 +1173,7 @@ const ManagerDashboard = () => {
 
                           <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-4">
                             <button
+                              type="button"
                               onClick={() => handleEdit(event)}
                               className="p-3 bg-white/10 hover:bg-white/20 backdrop-blur-md rounded-full text-white transition-all transform hover:scale-110 cursor-pointer"
                               title="Edit Event"
@@ -1168,6 +1181,7 @@ const ManagerDashboard = () => {
                               <Edit2 size={20} />
                             </button>
                             <button
+                              type="button"
                               onClick={() => handleDelete(event._id)}
                               className="p-3 bg-red-500/20 hover:bg-red-500/40 backdrop-blur-md rounded-full text-red-400 transition-all transform hover:scale-110 cursor-pointer"
                               title="Delete Event"
@@ -1175,6 +1189,7 @@ const ManagerDashboard = () => {
                               <Trash2 size={20} />
                             </button>
                             <button
+                              type="button"
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     navigate(`/message-page?eventId=${event._id}`);

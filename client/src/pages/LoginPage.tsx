@@ -2,6 +2,8 @@ import { motion } from 'framer-motion';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
+const API = import.meta.env.VITE_API_URL;
+
 const LoginPage = () => {
   const { user, loading } = useAuth();
 
@@ -18,7 +20,7 @@ const LoginPage = () => {
   }
 
   const handleGoogleLogin = () => {
-    window.location.href = '/api/auth/google';
+    window.location.href = `${API}/api/auth/google`;
   };
 
   return (

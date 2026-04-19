@@ -4,6 +4,8 @@ import { ArrowLeft, Link as LinkIcon, Loader2, Plus, Send, Trash2, MessageCircle
 import { useNavigate, useParams } from 'react-router-dom';
 import axios from 'axios';
 
+const API = import.meta.env.VITE_API_URL;
+
 interface ChatUser {
   _id: string;
   name: string;
@@ -83,7 +85,7 @@ const EventChatPage = () => {
   const fetchMessages = useCallback(async () => {
     if (!eventId) return;
     try {
-      const response = await axios.get(`/api/chats/events/${eventId}/messages`, {
+      const response = await axios.get(`${API}/api/chats/events/${eventId}/messages`, {
         withCredentials: true,
         params: { limit: 50 },
       });
@@ -100,7 +102,7 @@ const EventChatPage = () => {
     if (!eventId) return;
     try {
       setIsLoadingResources(true);
-      const response = await axios.get(`/api/chats/events/${eventId}/resources`, {
+      const response = await axios.get(`${API}/api/chats/events/${eventId}/resources`, {
         withCredentials: true,
       });
       setResources(response.data.resources || []);
@@ -113,7 +115,7 @@ const EventChatPage = () => {
 
   useEffect(() => {
     if (!eventId) return;
-    axios.get(`/api/chats/events/${eventId}`, { withCredentials: true }).catch((error) => {
+    axios.get(`${API}/api/chats/events/${eventId}`, { withCredentials: true }).catch((error) => {
       console.error('Error initializing chat:', error);
     });
     fetchMessages();
@@ -137,7 +139,7 @@ const EventChatPage = () => {
     try {
       setIsSending(true);
       await axios.post(
-        `/api/chats/events/${eventId}/messages`,
+        `${API}/api/chats/events/${eventId}/messages`,
         { content: messageInput.trim() },
         { withCredentials: true }
       );
@@ -153,7 +155,7 @@ const EventChatPage = () => {
   const handleDeleteMessage = async (messageId: string) => {
     if (!eventId || !isAdmin) return;
     try {
-      await axios.delete(`/api/chats/events/${eventId}/messages/${messageId}`, {
+      await axios.delete(`${API}/api/chats/events/${eventId}/messages/${messageId}`, {
         withCredentials: true,
       });
       setMessages((prev) => prev.filter((msg) => msg._id !== messageId));
@@ -169,7 +171,7 @@ const EventChatPage = () => {
     try {
       setIsSavingResource(true);
       await axios.post(
-        `/api/chats/events/${eventId}/resources`,
+        `${API}/api/chats/events/${eventId}/resources`,
         {
           title: resourceTitle.trim(),
           url: resourceUrl.trim(),

@@ -9,6 +9,8 @@ import CustomDatePicker from '../components/ui/CustomDatePicker';
 import CustomTimePicker from '../components/ui/CustomTimePicker';
 import { useAuth } from '../context/AuthContext';
 
+const API = import.meta.env.VITE_API_URL;
+
 interface Event {
   _id: string;
   title: string;
@@ -85,7 +87,7 @@ const EventsPage = () => {
       if (hasSearch && !hasFilters) {
         // Use search endpoint when only name is provided
         params.name = searchName.trim();
-        response = await axios.get('/api/events/search', { params, withCredentials: true });
+        response = await axios.get(`${API}/api/events/search`, { params, withCredentials: true });
       } else if (hasFilters) {
         // Use filter endpoint when filters are provided
         if (category) params.category = category;
@@ -99,7 +101,7 @@ const EventsPage = () => {
         if (startTime) params.startTime = startTime;
         if (endTime) params.endTime = endTime;
         
-        response = await axios.get('/api/events/filter', { params, withCredentials: true });
+        response = await axios.get(`${API}/api/events/filter`, { params, withCredentials: true });
         
         // If search name is also provided, filter client-side
         if (hasSearch) {
@@ -112,7 +114,7 @@ const EventsPage = () => {
         }
       } else {
         // No search or filters - use search endpoint without name to get all events
-        response = await axios.get('/api/events/search', { params, withCredentials: true });
+        response = await axios.get(`${API}/api/events/search`, { params, withCredentials: true });
       }
 
       setEvents(response.data.events || []);
@@ -122,7 +124,7 @@ const EventsPage = () => {
         const statuses = await Promise.all(
           response.data.events.map(async (event: Event) => {
             try {
-              const statusResponse = await axios.get(`/api/events/${event._id}/interested/status`, {
+              const statusResponse = await axios.get(`${API}/api/events/${event._id}/interested/status`, {
                 withCredentials: true,
               });
               return { eventId: event._id, interested: statusResponse.data.interested as boolean };

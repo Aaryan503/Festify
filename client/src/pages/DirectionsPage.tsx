@@ -122,10 +122,11 @@ export default function DirectionsPage() {
 
   // Fallback Device orientation for stationary compass heading (mainly mobile)
   useEffect(() => {
-    const handleOrientation = (e: any) => {
-       if (e.webkitCompassHeading) {
+    const handleOrientation = (e: DeviceOrientationEvent) => {
+       const webkitHeading = (e as DeviceOrientationEvent & { webkitCompassHeading?: number }).webkitCompassHeading;
+       if (webkitHeading != null) {
          // iOS
-         setCompassHeading(e.webkitCompassHeading);
+         setCompassHeading(webkitHeading);
        } else if (e.alpha) {
          // Android (absolute orientation needed)
          // Note: e.alpha is mathematically opposite to compass heading, but varies wildly on android implementations. 
@@ -378,7 +379,9 @@ export default function DirectionsPage() {
   );
 }
 
-function MapEffect({ polylinePositions, userLocation }: { polylinePositions: [number, number][], userLocation: any }) {
+type UserLocationSnapshot = { lat: number; lng: number; heading: number | null };
+
+function MapEffect({ polylinePositions, userLocation }: { polylinePositions: [number, number][], userLocation: UserLocationSnapshot | null }) {
   const map = useMap();
   useEffect(() => {
     if (polylinePositions.length > 0) {

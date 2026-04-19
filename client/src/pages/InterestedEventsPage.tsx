@@ -5,6 +5,8 @@ import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import EventCard from '../components/EventCard';
 
+const API = import.meta.env.VITE_API_URL;
+
 interface Event {
   _id: string;
   title: string;
@@ -39,7 +41,7 @@ const InterestedEventsPage = () => {
   const fetchInterestedEvents = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await axios.get('/api/events/interested/my-events', {
+      const response = await axios.get(`${API}/api/events/interested/my-events`, {
         params: { page: currentPage, limit: 12 },
         withCredentials: true,
       });

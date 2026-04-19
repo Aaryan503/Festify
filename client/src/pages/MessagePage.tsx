@@ -4,6 +4,8 @@ import { ArrowLeft, Send, X, CheckCircle, AlertCircle } from 'lucide-react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import axios from 'axios';
 
+const API = import.meta.env.VITE_API_URL;
+
 const MessagePage = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -22,7 +24,7 @@ const MessagePage = () => {
       setFeedback(null);
       // Send message with eventId to target specific event's interested members
       const response = await axios.post(
-        '/api/messages/send-to-interested',
+        `${API}/api/messages/send-to-interested`,
         {
           eventId: eventId,
           title: title.trim(),

@@ -6,6 +6,8 @@ import { useCallback, useEffect, useState } from 'react';
 import axios from 'axios';
 import EventCard from '../components/EventCard';
 
+const API = import.meta.env.VITE_API_URL;
+
 interface Event {
   _id: string;
   title: string;
@@ -43,7 +45,7 @@ const ProfilePage = () => {
   const fetchInterestedEvents = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await axios.get('/api/events/interested/my-events', {
+      const response = await axios.get(`${API}/api/events/interested/my-events`, {
         params: { page: currentPage, limit: 12 },
         withCredentials: true,
       });

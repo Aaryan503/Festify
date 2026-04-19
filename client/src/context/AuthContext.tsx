@@ -1,6 +1,8 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 
+const API = import.meta.env.VITE_API_URL;
+
 interface User {
   _id: string;
   name: string;
@@ -31,7 +33,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const fetchUser = useCallback(async () => {
     try {
-      const { data } = await axios.get('/api/users/me', {
+      const { data } = await axios.get(`${API}/api/users/me`, {
         withCredentials: true,
       });
       setUser(data);
@@ -44,7 +46,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const logout = useCallback(async () => {
     try {
-      await axios.get('/api/auth/logout', { withCredentials: true });
+      await axios.get(`${API}/api/auth/logout`, { withCredentials: true });
     } finally {
       setUser(null);
     }
